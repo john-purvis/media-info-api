@@ -21,9 +21,6 @@ __pycache__/
 # DB Browser work files
 *.sqbpro
 
-# Personal Project Notes
-SCRATCH_PAD.md
-
 # Backup files
 *.rar
 
