@@ -1,0 +1,34 @@
+# media_info_api/.gitignore
+
+# Virtual environments
+venv/
+.venv/
+
+# visual code environment
+.vscode
+.vscode/
+
+# Python caches
+__pycache__/
+*.pyc
+
+# Local databases - every clone builds its own
+*.db
+
+# Secrets - never commit these
+.env
+
+# DB Browser work files
+*.sqbpro
+
+# Personal Project Notes
+SCRATCH_PAD.md
+
+# Backup files
+*.rar
+
+# Anything marked "old"
+*.old
+
+# ignore docs for now
+*.md
