@@ -1,10 +1,30 @@
-# media_info_api/common/db.py
+# media_info_api/db.py
 import sqlite3
 
 from flask import current_app, g
 
 from media_info_api.media.models import Catalog, Media, User
 
+
+def merge_dicts(media=Media, catalog=Catalog, user=User):
+    merged = {}
+    if not media:
+        return merged
+    else:
+        merged["media"] = media
+    if user:
+        if media["user_id"] == user["id"]:
+            media.pop("user_id")
+            media["user"] = user
+        else:
+            merged["user"] = user
+    if catalog:
+        if media["catalog_id"] == catalog["id"]:
+            media.pop("catalog_id")
+            media["catalog"] = catalog
+        else:
+            merged["catalog"] = catalog
+    return merged
 
 def mock_user(id: int) -> dict:
     users = \
@@ -143,6 +163,24 @@ def mock_catalog(id: int) -> dict:
         ]
     return catalog[id]
 
+def catalog_to_dict(catalog: Catalog):
+    if not catalog:
+        return None
+
+    return {
+        "id": catalog.id,
+        "media_id": catalog.media_id,
+        "date_created": catalog.date_created,
+        "date_archived": catalog.date_archived,
+        "location": catalog.location,
+        "label": catalog.label,
+        "file_media": catalog.file_media,
+        "file_media_nfo": catalog.file_media_nfo,
+        "file_media_img": catalog.file_media_img,
+        "path_media_rel": catalog.path_media_rel,
+        "path_media_sub": catalog.path_media_sub,
+        "path_media_img": catalog.path_media_img
+    }
 
 def media_to_dict(media: Media):
     if not media:
@@ -163,24 +201,6 @@ def media_to_dict(media: Media):
 
         "catalog_id": media.catalog_id,
         "user_id": media.user_id,
-
-    }
-
-def catalog_to_dict(catalog: Catalog):
-    if not catalog:
-        return None
-
-    return {
-        "date_created": catalog.date_created,
-        "date_archived": catalog.date_archived,
-        "location": catalog.location,
-        "label": catalog.label,
-        "file_media": catalog.file_media,
-        "file_media_nfo": catalog.file_media_nfo,
-        "file_media_img": catalog.file_media_img,
-        "path_media_rel": catalog.path_media_rel,
-        "path_media_sub": catalog.path_media_sub,
-        "path_media_img": catalog.path_media_img
     }
 
 def user_to_dict(user: User):

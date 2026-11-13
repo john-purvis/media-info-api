@@ -5,6 +5,10 @@ from pathlib import Path
 
 class Config:
     JSON_SORT_KEYS = os.environ.get("JSON_SORT_KEYS") == "True"
+    SECRET_KEY = os.environ.get("SECRET_KEY")
+    # Default is HS256 (can also be HS384, HS512, RS256, etc.)
+    JWT_ALGORITHM = os.environ.get("JWT_ALGORITHM")
+    JWT_SECRET_KEY = os.environ.get("JWT_SECRET_KEY")
 class DevelopmentConfig(Config):
     DEBUG = os.environ.get("DEV_DEBUG") == "True"
     db_name = os.environ.get("DEV_MEDIA_DATABASE")

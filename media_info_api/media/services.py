@@ -3,10 +3,44 @@
 from sqlalchemy.exc import IntegrityError
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from media_info_api.common.db import media_to_dict, user_to_dict
-from media_info_api.common.extensions import media_db
-from media_info_api.media.models import Media, User
+from media_info_api.db import catalog_to_dict, media_to_dict, merge_dicts, user_to_dict
+from media_info_api.extensions import media_db
+from media_info_api.media.models import Catalog, Media, User
 
+
+def db_health_check():
+    media = (
+        Media.query
+        .first()
+    )
+    media = media_to_dict(media)
+    if not media:
+        return {}
+
+    catalog = (
+        Catalog.query
+        .filter(
+            Catalog.id == media["catalog_id"]
+        )
+        .first()
+    )
+    catalog = catalog_to_dict(catalog)
+    if not catalog:
+        return {}
+
+    user = (
+        User.query
+        .filter(
+            User.id == media["user_id"]
+        )
+        .first()
+    )
+    user = user_to_dict(user)
+    if not user:
+        return {}
+
+    merged = merge_dicts(media=media, catalog=catalog, user=user)
+    return merged
 
 def get_media_service(media_id):
     media = (

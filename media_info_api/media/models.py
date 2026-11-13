@@ -1,7 +1,7 @@
 # media_info_api/movies/models.py
 from sqlalchemy import func
 
-from media_info_api.common.extensions import media_db
+from media_info_api.extensions import media_db
 
 
 class Media(media_db.Model):
@@ -16,6 +16,7 @@ class Media(media_db.Model):
     description = media_db.Column(media_db.Text, nullable=True)             # short description or plot
     imdb_id = media_db.Column(media_db.Text, nullable=True, unique=True)    # IMDB id
     tmdb_id = media_db.Column(media_db.Text, nullable=True, unique=True)    # TMDB id
+    wiki_id = media_db.Column(media_db.Text, nullable=True, unique=True)    # Wikipedia id
     catalog_id = media_db.Column(media_db.Integer, nullable=False)
     user_id = media_db.Column(media_db.Integer, nullable=False)
 
@@ -31,8 +32,9 @@ class User(media_db.Model):
 class Catalog(media_db.Model):
     __tablename__ = "catalog"
     id = media_db.Column(media_db.Integer, primary_key=True)
+    media_id = media_db.Column(media_db.Integer, primary_key=True)
     date_created = media_db.Column(media_db.DateTime, nullable=False, server_default=func.now())
-    date_archived = media_db.Column(media_db.DateTime, nullable=True),
+    date_archived = media_db.Column(media_db.DateTime, nullable=True)
     location = media_db.Column(media_db.Text, nullable=True, unique=False)              # "archive", "local", "cloud"
     label = media_db.Column(media_db.Text, nullable=True, unique=False)                 # DVDR disc label, BVR disc label, disk volume label, or tape label
     # if location is "archived" this points to where it was when archived

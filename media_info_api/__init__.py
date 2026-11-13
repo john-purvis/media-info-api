@@ -6,12 +6,13 @@ from flask import Flask
 
 from media_info_api.config import DevelopmentConfig, ProductionConfig, TestingConfig
 from media_info_api.media.models import Catalog, Media, User
-from media_info_api.media.routes import media_bp
+from media_info_api.media.routes import media_bp, root_bp
 
 
 def create_app(config_name="development"):
     # read the OS environment variable BEFORE loading .env
-    env = os.environ.get("APP_ENV", "development").lower()
+    # APP_ENV should be set if running in 'production'
+    env = os.environ.get("APP_ENV", config_name).lower()
 
     # only overwrite existing variables when not in production
     if env != "production":
@@ -19,18 +20,23 @@ def create_app(config_name="development"):
     else:
         load_dotenv(override=False)
 
-    print("Media info starting...")
     media_app = Flask(__name__)
+    if env != "production":
+        print("Flask started")
 
     config_classes = {
         "development": DevelopmentConfig,
         "testing": TestingConfig,
         "production": ProductionConfig,
     }
-
     media_app.config.from_object(config_classes[config_name])
+
     DEBUG                      = media_app.config["DEBUG"]
     JSON_SORT_KEYS             = media_app.config["JSON_SORT_KEYS"]
+    SECRET_KEY                 = media_app.config["SECRET_KEY"]
+    # Default is HS256 (can also be HS384, HS512, RS256, etc.)
+    JWT_ALGORITHM              = media_app.config["JWT_ALGORITHM"]
+    JWT_SECRET_KEY             = media_app.config["JWT_SECRET_KEY"]
     DATABASE                   = media_app.config["DATABASE"]
     SQLALCHEMY_DATABASE_URI    = media_app.config["SQLALCHEMY_DATABASE_URI"]
     DATA_BASE_PATH             = media_app.config["DATA_BASE_PATH"]
@@ -40,6 +46,9 @@ def create_app(config_name="development"):
         print(f"Environment                      = {config_name}")
         print(f"    DEBUG                        = {DEBUG}")
         print(f"    JSON_SORT_KEYS               = {JSON_SORT_KEYS}")
+        print(f"    SECRET_KEY                   = {SECRET_KEY}")
+        print(f"    JWT_ALGORITHM                = {JWT_ALGORITHM}")
+        print(f"    JWT_SECRET_KEY               = {JWT_SECRET_KEY}")
         print(f"    DATABASE                     = {DATABASE}")
         print(f"    SQLALCHEMY_DATABASE_URI      = {SQLALCHEMY_DATABASE_URI}")
         print(f"    DATA_BASE_PATH               = {DATA_BASE_PATH}")
@@ -47,16 +56,27 @@ def create_app(config_name="development"):
 
     media_app.json.sort_keys = JSON_SORT_KEYS
 
-    from media_info_api.common.extensions import media_db, migrate
-    if DEBUG:
-        print("Initializing SQLAchemy...")
+    from media_info_api.extensions import media_db, migrate
+
     media_db.init_app(media_app)
     if DEBUG:
-        print("    enabling migrations...")
-    migrate.init_app(media_app, media_db)
+        print("SQLAchemy initialized")
+
+    with media_app.app_context():
+        if media_db.engine.url.drivername == 'sqlite':
+            # enable batch mode for sqlite to help solve
+            # SQlite's ALTER TABLE and constraint limitations
+            migrate.init_app(media_app, media_db, render_as_batch=True)
+        else:
+            migrate.init_app(media_app, media_db)
     if DEBUG:
-        print("Registering Blueprints...")
+        print("Migrations enabled")
+
     media_app.register_blueprint(media_bp, url_prefix="/media")
+    media_app.register_blueprint(root_bp)
+
+    if DEBUG:
+        print("Blueprints registered")
 
     @media_app.teardown_appcontext
     def close_db(exception: Exception):
@@ -114,7 +134,7 @@ def create_app(config_name="development"):
                     year = "1999",
                     duration = 8160,
                     certificate = "R",
-                    genres = ["Action", "Sci-Fi"],
+                    genres = "Action, Sci-Fi",
                     description = "A computer hacker discovers that his life is nothing more than an elaborate simulation run by an evil AI.",
                     imdb_id = "tt0133093",
                     tmdb_id = "603-the-matrix",
@@ -129,7 +149,7 @@ def create_app(config_name="development"):
                     year = "2021",
                     duration = 8400,
                     certificate = "PG-13",
-                    genres = ["Action", "Drama", "Romance"],
+                    genres = "Action, Drama, Romance",
                     description = "A story about martial arts, dreams and star crossed lovers. Liger is an MMA fighter who trains hard and rises up the ranks with one goal in mind, to fight like his idol, world renowned MMA fighter Mark Anderson and get noticed by him.",
                     imdb_id = "tt4435072",
                     tmdb_id = "787163",
@@ -141,11 +161,11 @@ def create_app(config_name="development"):
                 Catalog(
                     id = 1,
                     media_id = 1,
-                    date_created = "",
-                    date_archived = "",
+                    date_created = None,
+                    date_archived = None,
                     location = "local",
                     label = "",
-                    file_media = "The Matrix (1999) [1080P.AMZN.X265.DDP-5.1].mkv",
+                    file_media = "The Matrix (1999) [1080P.BRRIP.X264].mp4",
                     file_media_nfo = "The Matrix (1999).nfo",
                     file_media_img = "The Matrix (1999).jpg",
                     path_media_rel = "/movies/[M-N]/Matrix, The (1999)",
@@ -155,16 +175,16 @@ def create_app(config_name="development"):
                 Catalog(
                     id = 2,
                     media_id = 2,
-                    date_created = "",
-                    date_archived = "",
+                    date_created = None,
+                    date_archived = None,
                     location = "archive",
                     label = "20261105-archive-disk-liger",
-                    file_media = "Liger (2021) [1080P.WEBRIP.X265.AC3-5.1].mp4",
+                    file_media = "Liger (2021) [XVID.HQ.AC3].avi",
                     file_media_nfo = "Liger (2021).nfo",
                     file_media_img = "Liger (2021).jpg",
-                    path_media_rel = "/media/movies/[K-L]/Liger (2021)",
-                    path_media_sub = "/media/movies/[K-L]/Liger (2021)/subs",
-                    path_media_img = "/media/movies/[K-L]/Liger (2021)/screens"
+                    path_media_rel = "/movies/[K-L]/Liger (2021)",
+                    path_media_sub = "/movies/[K-L]/Liger (2021)/subs",
+                    path_media_img = "/movies/[K-L]/Liger (2021)/screens"
                 )
             ]
 

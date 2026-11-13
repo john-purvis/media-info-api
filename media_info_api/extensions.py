@@ -1,4 +1,4 @@
-# media_info_api/common/extensions.pyd
+# media_info_api/extensions.py
 
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
@@ -17,4 +17,15 @@ convention = {
 metadata = MetaData(naming_convention=convention)
 
 media_db = SQLAlchemy(metadata=metadata)
+
+# NOTE: migration batch mode COULD be enabled here to help
+# SQlite's ALTER TABLE and constraint limitations using
+
+# Migrate(app=app, db=media_db, render_as_batch=True)
+# Migrate(db=media_db, render_as_batch=True)
+
+# HOWEVER, we need the app for that AND enabling it here
+# would enable it for SQLite, PostgreSQL, etc
+# So it is usually done in _init_.py so it can be enabled
+# only for SQLite...see _init_.py
 migrate = Migrate()

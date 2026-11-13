@@ -16,7 +16,7 @@ from media_info_api import create_app
 
 app = create_app()
 
-# 3. Run the built-in development server only when executed directly
+# run the built-in development server only when executed directly
 if __name__ == "__main__":
     host = os.environ.get("FLASK_HOST", "127.0.0.1")
     port = int(os.environ.get("FLASK_PORT", "5000"))

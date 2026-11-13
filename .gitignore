@@ -29,3 +29,6 @@ __pycache__/
 
 # ignore docs for now
 *.md
+
+# ignore data folder (with movies and music)
+data/
