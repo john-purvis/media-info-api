@@ -9,6 +9,7 @@ class Config:
     # Default is HS256 (can also be HS384, HS512, RS256, etc.)
     JWT_ALGORITHM = os.environ.get("JWT_ALGORITHM")
     JWT_SECRET_KEY = os.environ.get("JWT_SECRET_KEY")
+
 class DevelopmentConfig(Config):
     DEBUG = os.environ.get("DEV_DEBUG") == "True"
     db_name = os.environ.get("DEV_MEDIA_DATABASE")
@@ -22,6 +23,7 @@ class DevelopmentConfig(Config):
     MEDIA_BASE_PATH = os.environ.get("DEV_MEDIA_BASE_PATH")
     if not MEDIA_BASE_PATH:
         raise RuntimeError("DEV_MEDIA_BASE_PATH environment variable is required")
+
 class TestingConfig(Config):
     DEBUG = os.environ.get("TST_DEBUG") == "True"
     db_name = os.environ.get("TST_MEDIA_DATABASE")
@@ -35,6 +37,7 @@ class TestingConfig(Config):
     MEDIA_BASE_PATH = os.environ.get("TST_MEDIA_BASE_PATH")
     if not MEDIA_BASE_PATH:
         raise RuntimeError("TST_MEDIA_BASE_PATH environment variable is required")
+
 class ProductionConfig(Config):
     DEBUG = os.environ.get("PRD_DEBUG") == "False"
     db_name = os.environ.get("PRD_MEDIA_DATABASE")

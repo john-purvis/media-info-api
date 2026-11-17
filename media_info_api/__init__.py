@@ -74,7 +74,6 @@ def create_app(config_name="development"):
 
     media_app.register_blueprint(media_bp, url_prefix="/media")
     media_app.register_blueprint(root_bp)
-
     if DEBUG:
         print("Blueprints registered")
 

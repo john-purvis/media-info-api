@@ -1,4 +1,4 @@
-# media_info_api/movies/models.py
+# media_info_api/media/models.py
 from sqlalchemy import func
 
 from media_info_api.extensions import media_db
@@ -28,6 +28,7 @@ class User(media_db.Model):
     is_admin = media_db.Column(media_db.Integer, nullable=False, server_default="0")
     email = media_db.Column(media_db.Text, nullable=False, unique=True)
     phone = media_db.Column(media_db.Text, nullable=True, unique=False)
+    date_created = media_db.Column(media_db.DateTime, nullable=False, server_default=func.now())
 
 class Catalog(media_db.Model):
     __tablename__ = "catalog"
