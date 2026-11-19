@@ -6,25 +6,18 @@ from flask import current_app, g
 from media_info_api.media.models import Catalog, Media, User
 
 
-def merge_dicts(media=Media, catalog=Catalog, user=User):
-    merged = {}
+def join_with_media(media: Media, catalog: Catalog, user: User):
     if not media:
-        return merged
-    else:
-        merged["media"] = media
-    if user:
-        if media["user_id"] == user["id"]:
-            media.pop("user_id")
-            media["user"] = user
-        else:
-            merged["user"] = user
-    if catalog:
+        return {}
+    if catalog:  # noqa: SIM102
         if media["catalog_id"] == catalog["id"]:
             media.pop("catalog_id")
             media["catalog"] = catalog
-        else:
-            merged["catalog"] = catalog
-    return merged
+    if user:  # noqa: SIM102
+        if media["user_id"] == user["id"]:
+            media.pop("user_id")
+            media["user"] = user
+    return media
 
 def mock_user(id: int) -> dict:
     users = \
@@ -182,6 +175,17 @@ def catalog_to_dict(catalog: Catalog):
         "path_media_img": catalog.path_media_img
     }
 
+def update_catalog_from_dict(catalog: Catalog, data: dict, extra_excluded: set[str] | None = None):
+    excluded = {"id", "date_created"}
+    if extra_excluded:
+        excluded |= extra_excluded  # Combines both excluded column sets
+
+    # build a list of valid columns to update, excluding those above
+    valid_columns = {col.name for col in catalog.__table__.columns} - excluded
+
+    for key in data.keys() & valid_columns:
+        setattr(catalog, key, data[key])
+
 def media_to_dict(media: Media):
     if not media:
         return None
@@ -198,10 +202,20 @@ def media_to_dict(media: Media):
         "imdb_id": media.imdb_id,
         "tmdb_id": media.tmdb_id,
         "wiki_id": media.wiki_id,
-
         "catalog_id": media.catalog_id,
         "user_id": media.user_id,
     }
+
+def update_media_from_dict(media: Media, data: dict, extra_excluded: set[str] | None = None):
+    excluded = {"id"}
+    if extra_excluded:
+        excluded |= extra_excluded  # Combines both excluded column sets
+
+    # build a list of valid columns to update, excluding those above
+    valid_columns = {col.name for col in media.__table__.columns} - excluded
+
+    for key in data.keys() & valid_columns:
+        setattr(media, key, data[key])
 
 def user_to_dict(user: User):
     if not user:
@@ -212,9 +226,22 @@ def user_to_dict(user: User):
         "username": user.username,
         "password_hash": user.password_hash,
         "is_admin": user.is_admin,
+        "role": user.role,
         "email": user.email,
-        "phone": user.phone
+        "phone": user.phone,
+        "date_created": user.date_created
     }
+
+def update_user_from_dict(user: User, data: dict, extra_excluded: set[str] | None = None):
+    excluded = {"id", "date_created"}
+    if extra_excluded:
+        excluded |= extra_excluded  # Combines both excluded column sets
+
+    # build a list of valid columns to update, excluding those above
+    valid_columns = {col.name for col in user.__table__.columns} - excluded
+
+    for key in data.keys() & valid_columns:
+        setattr(user, key, data[key])
 
 def row_to_dict(row):
     """

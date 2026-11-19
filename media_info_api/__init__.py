@@ -1,12 +1,15 @@
 # media_info_api/__init__.py
 import os
 
+import click
 from dotenv import load_dotenv
+from flasgger import Swagger
 from flask import Flask
+from werkzeug.security import generate_password_hash
 
 from media_info_api.config import DevelopmentConfig, ProductionConfig, TestingConfig
 from media_info_api.media.models import Catalog, Media, User
-from media_info_api.media.routes import media_bp, root_bp
+from media_info_api.media.routes import media_bp, root_bp, users_bp
 
 
 def create_app(config_name="development"):
@@ -37,10 +40,12 @@ def create_app(config_name="development"):
     # Default is HS256 (can also be HS384, HS512, RS256, etc.)
     JWT_ALGORITHM              = media_app.config["JWT_ALGORITHM"]
     JWT_SECRET_KEY             = media_app.config["JWT_SECRET_KEY"]
+    JWT_EXPIRATION             = media_app.config["JWT_EXPIRATION"]
     DATABASE                   = media_app.config["DATABASE"]
     SQLALCHEMY_DATABASE_URI    = media_app.config["SQLALCHEMY_DATABASE_URI"]
     DATA_BASE_PATH             = media_app.config["DATA_BASE_PATH"]
     MEDIA_BASE_PATH            = media_app.config["MEDIA_BASE_PATH"]
+    media_app.json.sort_keys   = JSON_SORT_KEYS
 
     if DEBUG:
         print(f"Environment                      = {config_name}")
@@ -49,15 +54,13 @@ def create_app(config_name="development"):
         print(f"    SECRET_KEY                   = {SECRET_KEY}")
         print(f"    JWT_ALGORITHM                = {JWT_ALGORITHM}")
         print(f"    JWT_SECRET_KEY               = {JWT_SECRET_KEY}")
+        print(f"    JWT_EXPIRATION               = {JWT_EXPIRATION}")
         print(f"    DATABASE                     = {DATABASE}")
         print(f"    SQLALCHEMY_DATABASE_URI      = {SQLALCHEMY_DATABASE_URI}")
         print(f"    DATA_BASE_PATH               = {DATA_BASE_PATH}")
         print(f"    MEDIA_BASE_PATH              = {MEDIA_BASE_PATH}")
 
-    media_app.json.sort_keys = JSON_SORT_KEYS
-
     from media_info_api.extensions import media_db, migrate
-
     media_db.init_app(media_app)
     if DEBUG:
         print("SQLAchemy initialized")
@@ -72,10 +75,34 @@ def create_app(config_name="development"):
     if DEBUG:
         print("Migrations enabled")
 
-    media_app.register_blueprint(media_bp, url_prefix="/media")
     media_app.register_blueprint(root_bp)
+    media_app.register_blueprint(media_bp, url_prefix="/media")
+    media_app.register_blueprint(users_bp, url_prefix="/users")
     if DEBUG:
         print("Blueprints registered")
+
+    # The securityDefinition below is used by Swagger to describe the
+    # authentication mechanism for the API.
+    # It creates the Authorize button and input box in the Swagger interface,
+    # allowing users to input their JWT token for authenticated requests.
+    swagger_data = {
+        "swagger": "2.0",
+        "info": {
+            "title": "Recipe Book API",
+            "version": "1.0.0"
+        },
+        "securityDefinitions": {
+            "AuthKey": {
+                "type": "apiKey",
+                "name": "Authorization",
+                "in": "header",
+                "description": "Enter your JWT token with the 'Bearer' prefix. Example: 'Bearer eyJhbGciOi...'",
+                "example": "Bearer "
+            }
+        }
+    }
+    print("Initializing Swagger Docs...")
+    swagger = Swagger(media_app, template=swagger_data)  # noqa: F841
 
     @media_app.teardown_appcontext
     def close_db(exception: Exception):
@@ -88,6 +115,13 @@ def create_app(config_name="development"):
     def make_shell_context():
         return {"db": media_db, "Media": Media, "User": User, "Catalog": Catalog}
 
+    # flask --app media_info_api get-hash <password>
+    @media_app.cli.command("get-hash")
+    @click.argument("password")
+    def get_hash(password):
+        print(generate_password_hash(password))
+
+    # flask --app media_info_api seed-db
     @media_app.cli.command("seed-db")
     def seed_db():
         import click
@@ -100,7 +134,7 @@ def create_app(config_name="development"):
             [
                 User(
                     username = "admin",
-                    password_hash = "scrypt:32768:8:1$uZa1xzDnKUa10bxS$1e7c06b8c608a4a19a378894af6b80abba5ff760e3f8b891e283b8614317b24dce03de0b6309a2c74fd56dcf5ed010a32d8fc4db943371529b232b94d62d641c",
+                    password_hash = "scrypt:32768:8:1$5R7INDNQbky3BuU4$412d8580f60609b886942f9891f7bbba8f17271a9fffd72d7d75bed5e52dddd650cdf3f2e6a592e7a63a2c966ad382908bb7222c0855eb58722cc447d438006a",
                     is_admin = "True",
                     email = "admin@media_info.com",
                     phone = "5555555555"

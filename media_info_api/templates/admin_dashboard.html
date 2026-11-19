@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Command Center</title>
+    <script src="https://tailwindcss.com"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased">
+
+    <!-- Top Navigation -->
+    <nav class="border-b border-slate-800 bg-slate-900/70 backdrop-blur-md sticky top-0 z-10">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="h-8 w-8 rounded-lg bg-indigo-500 flex items-center justify-center font-bold text-white shadow-lg shadow-indigo-500/30">
+                    A
+                </div>
+                <span class="text-lg font-semibold tracking-wide">Admin<span class="text-indigo-400">OS</span></span>
+            </div>
+            <div class="flex items-center gap-4">
+                <span id="admin-badge" class="text-xs font-medium px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    Loading...
+                </span>
+                <button onclick="logout()" class="text-sm bg-slate-800 hover:bg-rose-600/90 text-slate-200 hover:text-white px-4 py-2 rounded-lg transition">
+                    Logout
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-6 py-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <h1 id="welcome-header" class="text-3xl font-bold tracking-tight">System Overview</h1>
+            <p class="text-slate-400 mt-1">Real-time authentication metrics and active token monitoring.</p>
+        </div>
+
+        <!-- Alert Box (Hidden by default, shows if unauthorized) -->
+        <div id="error-banner" class="hidden mb-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-sm"></div>
+
+        <!-- Stats Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl">
+                <p class="text-sm text-slate-400">Active Sessions</p>
+                <p class="text-3xl font-bold mt-2 text-white">1,284</p>
+                <p class="text-xs text-emerald-400 mt-2">+12.5% from last week</p>
+            </div>
+
+            <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl">
+                <p class="text-sm text-slate-400">Revoked Tokens (Blocklist)</p>
+                <p id="revoked-count" class="text-3xl font-bold mt-2 text-indigo-400">--</p>
+                <p class="text-xs text-slate-400 mt-2">Tracked in server memory</p>
+            </div>
+
+            <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl">
+                <p class="text-sm text-slate-400">Server Status</p>
+                <div class="flex items-center gap-2 mt-2">
+                    <span class="h-3 w-3 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <p class="text-2xl font-bold text-white">Operational</p>
+                </div>
+                <p class="text-xs text-slate-400 mt-2">HS256 Signature Verification Active</p>
+            </div>
+        </div>
+
+        <!-- Recent Activity Table -->
+        <div class="rounded-2xl bg-slate-900 border border-slate-800 overflow-hidden shadow-xl">
+            <div class="px-6 py-4 border-b border-slate-800 flex justify-between items-center">
+                <h2 class="font-semibold text-slate-200">Recent Admin Audit Log</h2>
+                <span class="text-xs text-slate-400">Live JWT Claims</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm">
+                    <thead class="bg-slate-950/50 text-slate-400 uppercase text-xs">
+                        <tr>
+                            <th class="px-6 py-3">User</th>
+                            <th class="px-6 py-3">Role</th>
+                            <th class="px-6 py-3">Token ID (JTI)</th>
+                            <th class="px-6 py-3">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="audit-table-body" class="divide-y divide-slate-800 text-slate-300">
+                        <tr>
+                            <td colspan="4" class="px-6 py-6 text-center text-slate-500">Verifying admin token...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        async function loadDashboard() {
+            const token = localStorage.getItem("access_token");
+            const errorBanner = document.getElementById("error-banner");
+
+            if (!token) {
+                errorBanner.textContent = "No access token found in localStorage. Please log in first.";
+                errorBanner.classList.remove("hidden");
+                return;
+            }
+
+            try {
+                const res = await fetch("/api/admin/stats", {
+                    headers: { "Authorization": `Bearer ${token}` }
+                });
+                const data = await res.json();
+
+                if (!res.ok) {
+                    errorBanner.textContent = `Access Denied (${res.status}): ${data.error}`;
+                    errorBanner.classList.remove("hidden");
+                    return;
+                }
+
+                // Populate UI with verified JWT claims
+                document.getElementById("welcome-header").textContent = `Welcome back, ${data.username}`;
+                document.getElementById("admin-badge").textContent = `Admin ID #${data.admin_id}`;
+                document.getElementById("revoked-count").textContent = data.revoked_tokens_count;
+
+                document.getElementById("audit-table-body").innerHTML = `
+                    <tr class="hover:bg-slate-800/40 transition">
+                        <td class="px-6 py-4 font-medium text-white">${data.username}</td>
+                        <td class="px-6 py-4"><span class="px-2 py-1 text-xs rounded bg-indigo-500/20 text-indigo-300">is_admin: true</span></td>
+                        <td class="px-6 py-4 font-mono text-xs text-slate-400">${data.jti}</td>
+                        <td class="px-6 py-4 text-emerald-400">Verified</td>
+                    </tr>
+                `;
+            } catch (err) {
+                errorBanner.textContent = "Failed to reach the admin API.";
+                errorBanner.classList.remove("hidden");
+            }
+        }
+
+        async function logout() {
+            const token = localStorage.getItem("access_token");
+            if (token) {
+                await fetch("/logout", {
+                    method: "POST",
+                    headers: { "Authorization": `Bearer ${token}` }
+                });
+                localStorage.removeItem("access_token");
+            }
+            window.location.reload();
+        }
+
+        loadDashboard();
+    </script>
+</body>
+</html>

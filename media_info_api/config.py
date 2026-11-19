@@ -9,7 +9,7 @@ class Config:
     # Default is HS256 (can also be HS384, HS512, RS256, etc.)
     JWT_ALGORITHM = os.environ.get("JWT_ALGORITHM")
     JWT_SECRET_KEY = os.environ.get("JWT_SECRET_KEY")
-
+    JWT_EXPIRATION = os.environ.get("JWT_EXPIRATION")
 class DevelopmentConfig(Config):
     DEBUG = os.environ.get("DEV_DEBUG") == "True"
     db_name = os.environ.get("DEV_MEDIA_DATABASE")
