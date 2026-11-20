@@ -805,8 +805,8 @@ def r_user_update(user_id):
     return jsonify(data), 200
 
 @users_bp.route("/<int:user_id>", methods=["DELETE"])
-@admin_required
 @token_required
+@admin_required
 def r_user_delete(user_id):
     """
     Delete a user from the database.

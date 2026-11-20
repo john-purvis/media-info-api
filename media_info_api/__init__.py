@@ -1,7 +1,6 @@
 # media_info_api/__init__.py
 import os
 
-import click
 from dotenv import load_dotenv
 from flasgger import Swagger
 from flask import Flask
@@ -115,12 +114,17 @@ def create_app(config_name="development"):
     def make_shell_context():
         return {"db": media_db, "Media": Media, "User": User, "Catalog": Catalog}
 
+    import click
+    from flask.cli import with_appcontext
     # flask --app media_info_api get-hash <password>
     @media_app.cli.command("get-hash")
     @click.argument("password")
+    @with_appcontext
     def get_hash(password):
         print(generate_password_hash(password))
 
+    import click
+    from flask.cli import with_appcontext
     # flask --app media_info_api seed-db
     @media_app.cli.command("seed-db")
     def seed_db():
@@ -227,4 +231,41 @@ def create_app(config_name="development"):
         media_db.session.commit()
         click.echo("Database seeded successfully!")
 
+    # somewhere that runs after media_db and User are defined,
+    # usually in the same file where you create the Flask app
+    import click
+    from flask.cli import with_appcontext
+    @media_app.cli.command("promote-user")
+    @click.argument("username")
+    @with_appcontext
+    def promote_user(username):
+        """Promote a user to admin by username."""
+        user = User.query.filter_by(username=username).first()
+        if not user:
+            click.echo(f"User '{username}' not found.")
+            return
+
+        user.is_admin = 1         # or True, depending how you store it
+        user.role = "admin"       # keep role in sync
+        media_db.session.commit()
+
+        click.echo(f"User '{username}' promoted to admin.")
+
+    import click
+    from flask.cli import with_appcontext
+    @media_app.cli.command("demote-user")
+    @click.argument("username")
+    @with_appcontext
+    def demote_user(username):
+        """Demote a user from admin by username."""
+        user = User.query.filter_by(username=username).first()
+        if not user:
+            click.echo(f"User '{username}' not found.")
+            return
+
+        user.is_admin = 0         # or False, depending how you store it
+        user.role = "user"       # keep role in sync
+        media_db.session.commit()
+
+        click.echo(f"User '{username}' demoted to user.")
     return media_app
