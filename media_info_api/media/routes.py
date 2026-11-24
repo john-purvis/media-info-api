@@ -219,7 +219,7 @@ def r_media_list():
     current_username      = g.current_user["username"]  # noqa: F841
     current_user_is_admin = g.current_user["is_admin"]
 
-    success, media = s_media_list(current_user_id_str, current_user_is_admin)
+    success, media = s_media_list(current_user_id_str, current_user_is_admin)  # noqa: RUF059
     return jsonify(media), 200
 
 @media_bp.route("/<int:media_id>", methods=["PATCH"])

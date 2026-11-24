@@ -447,3 +447,53 @@ Content-Length: 204
 Connection: close
 
 [{"id":5,"type":"movie","title":"User A Movie","year":2020,"duration":null,"certificate":null,"genres":null,"description":null,"imdb_id":null,"tmdb_id":null,"wiki_id":null,"catalog_id":null,"user_id":3}]
+
+
+===================================================================================
+
+# GET MEDIA 5 WITH USER 2
+curl -i -X GET "http://127.0.0.1:5000/media/5" -H "accept: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwianRpIjoiN2JjZTQ5NjUtMWZkOC00NjNkLWE4NWItMTA0OTJkODhkMjc5IiwiaWF0IjoxNzk1NTI4ODU3LCJleHAiOjE3OTU1MzYwNTcsInVzZXJuYW1lIjoiZXJpY2EiLCJyb2xlIjoidXNlciIsImlzX2FkbWluIjpmYWxzZX0.wPiXqwXAXlS-nJRIr0FTzrAiMcE9bIS_tvlJc9XIFiI"
+HTTP/1.1 404 NOT FOUND
+Server: Werkzeug/3.1.9 Python/3.14.8
+Date: Tue, 24 Nov 2026 14:02:18 GMT
+Content-Type: application/json
+Content-Length: 28
+Connection: close
+
+{"error":"media not found"}
+
+# GET MEDIA 5 WITH USER 2
+curl -i -X GET "http://127.0.0.1:5000/media/6" -H "accept: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwianRpIjoiN2JjZTQ5NjUtMWZkOC00NjNkLWE4NWItMTA0OTJkODhkMjc5IiwiaWF0IjoxNzk1NTI4ODU3LCJleHAiOjE3OTU1MzYwNTcsInVzZXJuYW1lIjoiZXJpY2EiLCJyb2xlIjoidXNlciIsImlzX2FkbWluIjpmYWxzZX0.wPiXqwXAXlS-nJRIr0FTzrAiMcE9bIS_tvlJc9XIFiI"
+HTTP/1.1 200 OK
+Server: Werkzeug/3.1.9 Python/3.14.8
+Date: Tue, 24 Nov 2026 14:02:39 GMT
+Content-Type: application/json
+Content-Length: 202
+Connection: close
+
+{"id":6,"type":"movie","title":"User B Movie","year":2021,"duration":null,"certificate":null,"genres":null,"description":null,"imdb_id":null,"tmdb_id":null,"wiki_id":null,"catalog_id":null,"user_id":2}
+
+# GET MEDIA 5 WITH USER 3
+curl -i -X GET "http://127.0.0.1:5000/media/5" -H "accept: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzIiwianRpIjoiNWM3ODc5OTMtYWVhNi00MWU3LWFhMmQtZjQ3NjU0YzYxNjU4IiwiaWF0IjoxNzk1NTI4NjEzLCJleHAiOjE3OTU1MzU4MTMsInVzZXJuYW1lIjoiamVycnkiLCJyb2xlIjoidXNlciIsImlzX2FkbWluIjpmYWxzZX0.9dQwqhJfvUjuIcVEwANqNTsXmO4b_QwOnOV89EFgwUM"
+HTTP/1.1 200 OK
+Server: Werkzeug/3.1.9 Python/3.14.8
+Date: Tue, 24 Nov 2026 13:59:50 GMT
+Content-Type: application/json
+Content-Length: 202
+Connection: close
+
+{"id":5,"type":"movie","title":"User A Movie","year":2020,"duration":null,"certificate":null,"genres":null,"description":null,"imdb_id":null,"tmdb_id":null,"wiki_id":null,"catalog_id":null,"user_id":3}
+
+# GET MEDIA 6 WITH USER 3
+curl -i -X GET "http://127.0.0.1:5000/media/6" -H "accept: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzIiwianRpIjoiNWM3ODc5OTMtYWVhNi00MWU3LWFhMmQtZjQ3NjU0YzYxNjU4IiwiaWF0IjoxNzk1NTI4NjEzLCJleHAiOjE3OTU1MzU4MTMsInVzZXJuYW1lIjoiamVycnkiLCJyb2xlIjoidXNlciIsImlzX2FkbWluIjpmYWxzZX0.9dQwqhJfvUjuIcVEwANqNTsXmO4b_QwOnOV89EFgwUM"
+HTTP/1.1 404 NOT FOUND
+Server: Werkzeug/3.1.9 Python/3.14.8
+Date: Tue, 24 Nov 2026 14:00:13 GMT
+Content-Type: application/json
+Content-Length: 28
+Connection: close
+
+{"error":"media not found"}
+
+
+============================================================================

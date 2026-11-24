@@ -72,62 +72,55 @@ def s_catalog_list():
     )
     return True, [catalog_to_dict(c) for c in catalog]
 
-def s_catalog_create(data):
+def s_catalog_create(current_user_id, current_user_is_admin, data):
+    new_catalog = Catalog(
+        # id             = data.get("id", None), \
+        media_id       = data.get("media_id", None), \
+        date_created   = data.get("date_created", None), \
+        date_archived  = data.get("date_archived", None), \
+        location       = data.get("location", None), \
+        label          = data.get("label", None), \
+        file_media     = data.get("file_media", None), \
+        file_media_nfo = data.get("file_media_nfo", None), \
+        file_media_img = data.get("file_media_img", None), \
+        path_media_rel = data.get("path_media_rel", None), \
+        path_media_sub = data.get("path_media_sub", None), \
+        path_media_img = data.get("path_media_img", None)
+    )
     try:
-        # 1. Insert the first record with the foreign key left as None (NULL)
-        new_catalog = Catalog(
-            # id             = data.get("id", None), \
-            # media_id       = data.get("media_id", None), \
-            media_id       = None, \
-            date_created   = data.get("date_created", None), \
-            date_archived  = data.get("date_archived", None), \
-            location       = data.get("location", None), \
-            label          = data.get("label", None), \
-            file_media     = data.get("file_media", None), \
-            file_media_nfo = data.get("file_media_nfo", None), \
-            file_media_img = data.get("file_media_img", None), \
-            path_media_rel = data.get("path_media_rel", None), \
-            path_media_sub = data.get("path_media_sub", None), \
-            path_media_img = data.get("path_media_img", None)
-        )
+        # media_id must exist in order to add a catalog
+        if current_user_is_admin:
+            # no filter if admin
+            media = (
+                Media.query
+                .filter(
+                    Media.id == new_catalog.media_id
+                )
+                .first()
+            )
+        else:
+            # filer by user_id if not admin
+            media = (
+                Media.query
+                .filter(
+                    Media.id == new_catalog.media_id
+                )
+                .filter(
+                    Media.user_id == current_user_id
+                )
+                .first()
+            )
+        if not media:
+            return False, "media not found"
+
         media_db.session.add(new_catalog)
-
-        # 2. Flush sends the INSERT to the DB and populates new_catalog.id
-        media_db.session.flush()
-
-        # 3. Use the newly generated ID for the second record
-        new_media = Media(
-            # id          = data.get("id", None), \
-            # catalog_id  = data.get("catalog_id", None), \
-            catalog_id  = new_catalog.id, \
-            user_id     = data.get("user_id", None), \
-            type        = data.get("type", None), \
-            title       = data.get("title", None), \
-            year        = data.get("year", None), \
-            duration    = data.get("duration", None), \
-            certificate = data.get("certificate", None), \
-            genres      = data.get("genres", None), \
-            description = data.get("description", None), \
-            imdb_id     = data.get("imdb_id", None), \
-            tmdb_id     = data.get("tmdb_id", None), \
-            wiki_id     = data.get("wiki_id", None)
-        )
-        media_db.session.add(new_media)
-
-        # 4. Flush sends the INSERT to the DB and populates new_media.id
-        media_db.session.flush()
-
-        # 5. Assign the second ID back to the first record
-        new_catalog.media_id = new_media.id
-
-        # 6. Commit executes the final UPDATE and saves everything atomically
         media_db.session.commit()
     except IntegrityError:
         media_db.session.rollback()
-        return False, "media with that title already exists"
+        return False, "catalog already exists for that media"
 
-    return True, join_with_media(media_to_dict(new_media), catalog_to_dict(new_catalog))
-
+    return True, catalog_to_dict(new_catalog)
+    #return True, join_with_media(media_to_dict(new_media), catalog_to_dict(new_catalog))
 
 
 def s_catalog_update(current_user_id, current_user_is_admin, catalog_id, data):
@@ -173,47 +166,62 @@ def s_catalog_delete(current_user_id, current_user_is_admin, catalog_id):
 # media services ===============================================================
 
 def s_media_create(data):
-    media = Media(
-        catalog_id  = data.get("catalog_id", None), \
-        user_id     = data.get("user_id", None), \
-        type        = data.get("type", None), \
-        title       = data.get("title", None), \
-        year        = data.get("year", None), \
-        duration    = data.get("duration", None), \
-        certificate = data.get("certificate", None), \
-        genres      = data.get("genres", None), \
-        description = data.get("description", None), \
-        imdb_id     = data.get("imdb_id", None), \
-        tmdb_id     = data.get("tmdb_id", None), \
-        wiki_id     = data.get("wiki_id", None)
-    )
-    catalog = Catalog(
-        media_id       = data.get("media_id", None), \
-        # date_created   = data.get("date_created", None), \
-        # date_archived  = data.get("date_archived", None), \
-        location       = data.get("location", None), \
-        label          = data.get("label", None), \
-        file_media     = data.get("file_media", None), \
-        file_media_nfo = data.get("file_media_nfo", None), \
-        file_media_img = data.get("file_media_img", None), \
-        path_media_rel = data.get("path_media_rel", None), \
-        path_media_sub = data.get("path_media_sub", None), \
-        path_media_img = data.get("path_media_img", None)
-    )
-
-    # business logic here
-    # on media create, we will ALWAYS create an associated catalog object
-    # even if all values are None / NULL
-
-    media_db.session.add(media)
-    media_db.session.add(catalog)
     try:
+        # 1. Insert the first record with the foreign key left as None (NULL)
+        new_media = Media(
+            # id          = data.get("id", None), \
+            # catalog_id  = data.get("catalog_id", None), \
+            catalog_id  = None, \
+            user_id     = data.get("user_id", None), \
+            type        = data.get("type", None), \
+            title       = data.get("title", None), \
+            year        = data.get("year", None), \
+            duration    = data.get("duration", None), \
+            certificate = data.get("certificate", None), \
+            genres      = data.get("genres", None), \
+            description = data.get("description", None), \
+            imdb_id     = data.get("imdb_id", None), \
+            tmdb_id     = data.get("tmdb_id", None), \
+            wiki_id     = data.get("wiki_id", None)
+        )
+        media_db.session.add(new_media)
+
+        # 2. Flush sends the INSERT to the DB and populates new_catalog.id
+        media_db.session.flush()
+
+        # 3. Use the newly generated ID for the second record
+        new_catalog = Catalog(
+            # id             = data.get("id", None), \
+            # media_id       = data.get("media_id", None), \
+            media_id       = new_media.id, \
+            date_created   = data.get("date_created", None), \
+            date_archived  = data.get("date_archived", None), \
+            location       = data.get("location", None), \
+            label          = data.get("label", None), \
+            file_media     = data.get("file_media", None), \
+            file_media_nfo = data.get("file_media_nfo", None), \
+            file_media_img = data.get("file_media_img", None), \
+            path_media_rel = data.get("path_media_rel", None), \
+            path_media_sub = data.get("path_media_sub", None), \
+            path_media_img = data.get("path_media_img", None)
+        )
+        media_db.session.add(new_catalog)
+
+        # 4. Flush sends the INSERT to the DB and populates new_media.id
+        media_db.session.flush()
+
+        # 5. Assign the second ID back to the first record
+        new_media.catalog_id = new_catalog.id
+
+        # 6. Commit executes the final UPDATE and saves everything atomically
         media_db.session.commit()
     except IntegrityError:
         media_db.session.rollback()
         return False, "media with that title already exists"
 
-    return True, media_to_dict(media)
+    return True, media_to_dict(new_media)
+    # return True, join_with_media(media_to_dict(new_media), catalog_to_dict(new_catalog))
+
 
 def s_media_get(current_user_id_str, current_user_is_admin, media_id):
     current_user_id = int(current_user_id_str)
