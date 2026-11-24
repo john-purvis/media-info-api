@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+
+<body>
+    <div class="container">
+        <div style="overflow-x: auto; margin: 20px 0;">
+            <table
+                style="width: 100%; border-collapse: collapse; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14px; line-height: 1.5; color: #24292f;">
+                <thead>
+                    <tr style="background-color: #f6f8fa; text-align: left;">
+                        <th style="padding: 10px 12px; border: 1px solid #d0d7de; font-weight: 600;">Path</th>
+                        <th style="padding: 10px 12px; border: 1px solid #d0d7de; font-weight: 600;">Method</th>
+                        <th style="padding: 10px 12px; border: 1px solid #d0d7de; font-weight: 600;">Purpose</th>
+                        <th style="padding: 10px 12px; border: 1px solid #d0d7de; font-weight: 600;">Success</th>
+                        <th style="padding: 10px 12px; border: 1px solid #d0d7de; font-weight: 600;">Errors</th>
+                        <th style="padding: 10px 12px; border: 1px solid #d0d7de; font-weight: 600;">Access</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Auth & General -->
+                    <tr>
+                        <td
+                            style="padding: 10px 12px; border: 1px solid #d0d7de; font-family: monospace; white-space: nowrap;">
+                            /register</td>
+                        <td
+                            style="padding: 10px 12px; border: 1px solid #d0d7de; font-family: monospace; font-weight: 600;">
+                            POST</td>
+                        <td style="padding: 10px 12px; border: 1px solid #d0d7de;">Create user account</td>
+                        <td style="padding: 10px 12px; border: 1px solid #d0d7de; font-family: monospace;">201</td>
+                        <td
+                            style="padding: 10px 12px; border: 1px solid #d0d7de; font-family: monospace; white-space: nowrap;">
+                            400, 409</td>
+                        <td style="padding: 10px 12px; border: 1px solid #d0d7de;">public</td>
+                    </tr>
+                    <tr>
+                        <td
+                            style="padding: 10px 12px; border: 1px solid #d0d7de; font-family: monospace; white-space: nowrap;">
+                            /login</td>
+                        <td
+                            style="padding: 10px 12px; border: 1px solid #d0d7de; font-family: monospace; font-weight: 600;">
+                            POST</td>
+                        <td style="padding: 10px 12px; border: 1px solid #d0d7de;">Login / Get auth token</td>
+                        <td style="padding: 10px 12px; border: 1px solid #d0d7de; font-family: monospace;">200</td>
+                        <td
+                            style="padding: 10px 12px; border: 1px solid #d0d7de; font-family: monospace; white-space: nowrap;">
+                            400, 401</td>
+                        <td style="padding: 10px 12px; border: 1px solid #d0d7de;">public</td>
+                    </tr>
+                    <tr>
+                        <td
+                            style="padding: 10px 12px; border: 1px solid #d0d7de; font-family: monospace; white-space: nowrap;">
+                            /</td>
+                        <td
+                            style="padding: 10px 12px; border: 1px solid #d0d7de; font-family: monospace; font-weight: 600;">
+                            GET</td>
+                        <td style="padding: 10px 12px; border: 1px solid #d0d7de;">Landing Page</td>
+                        <td style="padding: 10px 12px; border: 1px solid #d0d7de; font-family: monospace;">200</td>
+                        <td style="padding: 10px 12px; border: 1px solid #d0d7de; font-family: monospace;"></td>
+                        <td style="padding: 10px 12px; border: 1px solid #d0d7de;">public</td>
+                    </tr>
+                    <tr>
+                        <td
+                            style="padding: 10px 12px; border: 1px solid #d0d7de; border-bottom: 2px solid #8c959f; font-family: monospace; white-space: nowrap;">
+                            /health</td>
+                        <td
+                            style="padding: 10px 12px; border: 1px solid #d0d7de; border-bottom: 2px solid #8c959f; font-family: monospace; font-weight: 600;">
+                            GET</td>
+                        <td style="padding: 10px 12px; border: 1px solid #d0d7de; border-bottom: 2px solid #8c959f;">Up
+                            / Down status</td>
+                        <td
+                            style="padding: 10px 12px; border: 1px solid #d0d7de; border-bottom: 2px solid #8c959f; font-family: monospace;">
+                            200</td>
+                        <td
+                            style="padding: 10px 12px; border: 1px solid #d0d7de; border-bottom: 2px solid #8c959f; font-family: monospace;">
+                        </td>
+                        <td style="padding: 10px 12px; border: 1px solid #d0d7de; border-bottom: 2px solid #8c959f;">
+                            public</td>
+                    </tr>
+
+                    <!-- Users -->
+                    <tr>
+                        <td
+                            style="padding: 10px 12px; border: 1px solid #d0d7de; font-family: monospace; white-space: nowrap;">
+                            /users/me</td>
+                        <td
+                            style="padding: 10px 12px; border: 1px solid #d0d7de; font-family: monospace; font-weight: 600;">
+                            GET</td>
+                        <td style="padding: 10px 12px; border: 1px solid #d0d7de;">Get profile</td>
+                        <td style="padding: 10px 12px; border: 1px solid #d0d7de; font-family: monospace;">200</td>
+                        <td
+                            style="padding: 10px 12px; border: 1px solid #d0d7de; font-family: monospace; white-space: nowrap;">
+                            401</td>
+                        <td style="padding: 10px 12px; border: 1px solid #d0d7de;">logged in only</td>
+                    </tr>
+                    <tr>
+                        <td
+                            style="padding: 10px 12px; border: 1px solid #d0d7de; font-family: monospace; white-space: nowrap;">
+                        </td>
+                        <td
+                            style="padding: 10px 12px; border: 1px solid #d0d7de; font-family: monospace; font-weight: 600;">
+                            POST</td>
+                        <td style="padding: 10px 12px; border: 1px solid #d0d7de;">Update profile</td>
+                        <td style="padding: 10px 12px; border: 1px solid #d0d7de; font-family: monospace;">200</td>
+                        <td
+                            style="padding: 10px 12px; border: 1px solid #d0d7de; font-family: monospace; white-space: nowrap;">
+                            401, 409</td>
+                        <td style="padding: 10px 12px; border: 1px solid #d0d7de;">logged in only</td>
+                    </tr>
+                    <tr>
+                        <td
+                            style="padding: 10px 12px; border: 1px solid #d0d7de; font-family: monospace; white-space: nowrap;">
+                            /users</td>
+                        <td
+                            style="padding: 10px 12px; border: 1px solid #d0d7de; font-family: monospace; font-weight: 600;">
+                            GET</td>
+                        <td style="padding: 10px 12px; border: 1px solid #d0d7de;">List users</td>
+                        <td style="padding: 10px 12px; border: 1px solid #d0d7de; font-family: monospace;">200</td>
+                        <td
+                            style="padding: 10px 12px; border: 1px solid #d0d7de; font-family: monospace; white-space: nowrap;">
+                            400, 401</td>
+                        <td style="padding: 10px 12px; border: 1px solid #d0d7de;">admin only</td>
+                    </tr>
+                    <tr>
+                        <td
+                            style="padding: 10px 12px; border: 1px solid #d0d7de; font-family: monospace; white-space: nowrap;">
+                        </td>
+                        <td
+                            style="padding: 10px 12px; border: 1px solid #d0d7de; font-family: monospace; font-weight: 600;">
+                            POST</td>
+                        <td style="padding: 10px 12px; border: 1px solid #d0d7de;">Create users</td>
+                        <td style="padding: 10px 12px; border: 1px solid #d0d7de; font-family: monospace;">201</td>
+                        <td
+                            style="padding: 10px 12px; border: 1px solid #d0d7de; font-family: monospace; white-space: nowrap;">
+                            400, 401, 409</td>
+                        <td style="padding: 10px 12px; border: 1px solid #d0d7de;">admin only</td>
+                    </tr>
+                    <tr>
+                        <td
+                            style="padding: 10px 12px; border: 1px solid #d0d7de; font-family: monospace; white-space: nowrap;">
+                            /users/&lt;id&gt;</td>
+                        <td
+                            style="padding: 10px 12px; border: 1px solid #d0d7de; font-family: monospace; font-weight: 600;">
+                            GET</td>
+                        <td style="padding: 10px 12px; border: 1px solid #d0d7de;">Get user by ID</td>
+                        <td style="padding: 10px 12px; border: 1px solid #d0d7de; font-family: monospace;">200</td>
+                        <td
+                            style="padding: 10px 12px; border: 1px solid #d0d7de; font-family: monospace; white-space: nowrap;">
+                            400, 401, 404</td>
+                        <td style="padding: 10px 12px; border: 1px solid #d0d7de;">admin only</td>
+                    </tr>
+                    <tr>
+                        <td
+                            style="padding: 10px 12px; border: 1px solid #d0d7de; font-family: monospace; white-space: nowrap;">
+                        </td>
+                        <td
+                            style="padding: 10px 12px; border: 1px solid #d0d7de; font-family: monospace; font-weight: 600;">
+                            PATCH</td>
+                        <td style="padding: 10px 12px; border: 1px solid #d0d7de;">Update user by ID</td>
+                        <td style="padding: 10px 12px; border: 1px solid #d0d7de; font-family: monospace;">200</td>
+                        <td
+                            style="padding: 10px 12px; border: 1px solid #d0d7de; font-family: monospace; white-space: nowrap;">
+                            400, 401, 404, 409</td>
+                        <td style="padding: 10px 12px; border: 1px solid #d0d7de;">admin only</td>
+                    </tr>
+                    <tr>
+                        <td
+                            style="padding: 10px 12px; border: 1px solid #d0d7de; border-bottom: 2px solid #8c959f; font-family: monospace; white-space: nowrap;">
+                        </td>
+                        <td
+                            style="padding: 10px 12px; border: 1px solid #d0d7de; border-bottom: 2px solid #8c959f; font-family: monospace; font-weight: 600;">
+                            DELETE</td>
+                        <td style="padding: 10px 12px; border: 1px solid #d0d7de; border-bottom: 2px solid #8c959f;">
+                            Delete user by ID</td>
+                        <td
+                            style="padding: 10px 12px; border: 1px solid #d0d7de; border-bottom: 2px solid #8c959f; font-family: monospace;">
+                            204</td>
+                        <td
+                            style="padding: 10px 12px; border: 1px solid #d0d7de; border-bottom: 2px solid #8c959f; font-family: monospace; white-space: nowrap;">
+                            400, 401, 404</td>
+                        <td style="padding: 10px 12px; border: 1px solid #d0d7de; border-bottom: 2px solid #8c959f;">
+                            admin only</td>
+                    </tr>
+
+                    <!-- Media -->
+                    <tr>
+                        <td
+                            style="padding: 10px 12px; border: 1px solid #d0d7de; font-family: monospace; white-space: nowrap;">
+                            /media</td>
+                        <td
+                            style="padding: 10px 12px; border: 1px solid #d0d7de; font-family: monospace; font-weight: 600;">
+                            GET</td>
+                        <td style="padding: 10px 12px; border: 1px solid #d0d7de;">List media</td>
+                        <td style="padding: 10px 12px; border: 1px solid #d0d7de; font-family: monospace;">200</td>
+                        <td style="padding: 10px 12px; border: 1px solid #d0d7de; font-family: monospace;"></td>
+                        <td style="padding: 10px 12px; border: 1px solid #d0d7de;">public</td>
+                    </tr>
+                    <tr>
+                        <td
+                            style="padding: 10px 12px; border: 1px solid #d0d7de; font-family: monospace; white-space: nowrap;">
+                        </td>
+                        <td
+                            style="padding: 10px 12px; border: 1px solid #d0d7de; font-family: monospace; font-weight: 600;">
+                            POST</td>
+                        <td style="padding: 10px 12px; border: 1px solid #d0d7de;">Create media</td>
+                        <td style="padding: 10px 12px; border: 1px solid #d0d7de; font-family: monospace;">201</td>
+                        <td
+                            style="padding: 10px 12px; border: 1px solid #d0d7de; font-family: monospace; white-space: nowrap;">
+                            400, 401, 409</td>
+                        <td style="padding: 10px 12px; border: 1px solid #d0d7de;">logged in only</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+
+</html>

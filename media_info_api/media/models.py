@@ -12,7 +12,11 @@ class Media(media_db.Model):
     __tablename__ = "media"
     id = media_db.Column(media_db.Integer, primary_key=True)
     catalog_id = media_db.Column(media_db.Integer, nullable=True, unique=True) # must be nullable for media create and catalog create
-    user_id = media_db.Column(media_db.Integer, nullable=False)
+    # user_id = media_db.Column(media_db.Integer, nullable=False)
+    # Updated with ForeignKey pointing to users.id
+    user_id = media_db.Column(
+        media_db.Integer, media_db.ForeignKey("users.id"), nullable=False
+    )
     type = media_db.Column(media_db.Text, nullable=False)                       # movie, tv_series, tv_episode
     title = media_db.Column(media_db.Text, nullable=False, unique=True)
     year = media_db.Column(media_db.Integer, nullable=True)
@@ -24,6 +28,9 @@ class Media(media_db.Model):
     tmdb_id = media_db.Column(media_db.Text, nullable=True, unique=True)        # TMDB id
     wiki_id = media_db.Column(media_db.Text, nullable=True, unique=True)        # Wikipedia id
 
+    # Optional: access the owner via media.user
+    user = media_db.relationship("User", back_populates="media_items")
+
 class User(media_db.Model):
     __tablename__ = "users"
     id = media_db.Column(media_db.Integer, primary_key=True)
@@ -34,6 +41,9 @@ class User(media_db.Model):
     email = media_db.Column(media_db.Text, nullable=False, unique=True)
     phone = media_db.Column(media_db.Text, nullable=True, unique=False)
     date_created = media_db.Column(media_db.DateTime, nullable=False, server_default=func.now())
+
+    # Optional: access a user's media via user.media_items
+    media_items = media_db.relationship("Media", back_populates="user")
 
     @validates("date_created")
     def validate_date_created(self, key, value):

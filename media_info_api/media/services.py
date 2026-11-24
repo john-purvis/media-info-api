@@ -172,7 +172,6 @@ def s_catalog_delete(current_user_id, current_user_is_admin, catalog_id):
 
 # media services ===============================================================
 
-
 def s_media_create(data):
     media = Media(
         catalog_id  = data.get("catalog_id", None), \
@@ -190,8 +189,8 @@ def s_media_create(data):
     )
     catalog = Catalog(
         media_id       = data.get("media_id", None), \
-        date_created   = data.get("date_created", None), \
-        date_archived  = data.get("date_archived", None), \
+        # date_created   = data.get("date_created", None), \
+        # date_archived  = data.get("date_archived", None), \
         location       = data.get("location", None), \
         label          = data.get("label", None), \
         file_media     = data.get("file_media", None), \
@@ -216,25 +215,57 @@ def s_media_create(data):
 
     return True, media_to_dict(media)
 
-def s_media_get(media_id):
-    media = (
-        Media.query
-        .filter(
-            Media.id == media_id
+def s_media_get(current_user_id_str, current_user_is_admin, media_id):
+    current_user_id = int(current_user_id_str)
+
+    if current_user_is_admin:
+        # show all media if admin
+        media = (
+            Media.query
+            .filter(
+                Media.id == media_id
+            )
+            .first()
         )
-        .first()
-    )
+    else:
+        # filter media by user id if not admin
+        media = (
+            Media.query
+            .filter(
+                Media.id == media_id
+            )
+            .filter(
+                Media.user_id == current_user_id
+            )
+            .first()
+        )
     if not media:
         return False, "media not found"
 
     return True, media_to_dict(media)
 
-def s_media_list():
-    media = (
-        Media.query
-        .order_by(Media.id)
-        .all()
-    )
+def s_media_list(current_user_id_str, current_user_is_admin):
+    current_user_id = int(current_user_id_str)
+
+    if current_user_is_admin:
+        # show all media if admin
+        media = (
+            Media.query
+            .order_by(Media.id)
+            .all()
+        )
+    else:
+        # filter media by user id if not admin
+        media = (
+            Media.query
+            .filter(Media.user_id == current_user_id)
+            .order_by(Media.id)
+            .all()
+        )
+        if not media:
+            # no media returned, return empty list
+            return True, []
+
     return True, [media_to_dict(m) for m in media]
 
 def s_media_update(current_user_id, current_user_is_admin, media_id, data):
@@ -489,14 +520,12 @@ def s_user_update(current_user_id, current_user_is_admin, user_id, data):
     # IF WE GET HERE THEN WE ARE AUTHENTICATED and AUTHORIZED
     # ...and have a user object
 
-    if "password" in data:
-        # password is in data to be updated
-        if data["password"].strip() == "":  # noqa: SIM102
-            # but password in blank
-            if not current_user_is_admin:
-                # NOT admin, don't update to blank if not admin
-                data.pop("password")
-                return False, "a valid non-blank password is required"
+    if "password" in data and data["password"].strip() == "":
+        # but password in blank
+        if not current_user_is_admin:
+            # NOT admin, don't update to blank if not admin
+            data.pop("password")
+            return False, "a valid non-blank password is required"
 
         # hash the password, and swap password field for password_hash field
         data["password_hash"] = generate_password_hash(data["password"])

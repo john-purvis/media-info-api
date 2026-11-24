@@ -78,20 +78,15 @@ def media_create():
       409:
         description: title already taken
     """
+    # get custom claims from "g"
+    current_user_id_str   = g.current_user["sub"]
+    current_username      = g.current_user["username"]  # noqa: F841
+    current_user_is_admin = g.current_user["is_admin"]  # noqa: F841
+
     data = request.get_json(silent=True) or {}
 
-    catalog_id  = data.get("catalog_id", None)  # noqa: F841
-    user_id     = data.get("user_id", None)  # noqa: F841
-    type        = data.get("type", None)  # noqa: F841
-    title       = data.get("title", None)  # noqa: F841
-    year        = data.get("year", None)  # noqa: F841
-    duration    = data.get("duration", None)  # noqa: F841
-    certificate = data.get("certificate", None)  # noqa: F841
-    genres      = data.get("genres", None)  # noqa: F841
-    description = data.get("description", None)  # noqa: F841
-    imdb_id     = data.get("imdb_id", None)  # noqa: F841
-    tmdb_id     = data.get("tmdb_id", None)  # noqa: F841
-    wiki_id     = data.get("wiki_id", None)  # noqa: F841
+    # replace any user_id with the current user id
+    data["user_id"] = int(current_user_id_str)
 
     success, data = s_media_create(data)
     if not success:
@@ -104,6 +99,7 @@ def media_create():
     return jsonify(data), 201
 
 @media_bp.get("/<int:media_id>")
+@token_required
 def r_get_media(media_id):
     """
     get media by id
@@ -156,13 +152,19 @@ def r_get_media(media_id):
                 wiki_id:
                     type: string
     """
-    success, data = s_media_get(media_id)
+    # get custom claims from "g"
+    current_user_id_str   = g.current_user["sub"]
+    current_username      = g.current_user["username"]  # noqa: F841
+    current_user_is_admin = g.current_user["is_admin"]
+
+    success, data = s_media_get(current_user_id_str, current_user_is_admin, media_id)
     if not success:
         return jsonify({"error": f"{data}"}), 404
 
     return jsonify(data), 200
 
 @media_bp.get("")
+@token_required
 def r_media_list():
     """
     list all media
@@ -212,7 +214,12 @@ def r_media_list():
                     wiki_id:
                         type: string
     """
-    media = s_media_list()
+    # get custom claims from "g"
+    current_user_id_str   = g.current_user["sub"]
+    current_username      = g.current_user["username"]  # noqa: F841
+    current_user_is_admin = g.current_user["is_admin"]
+
+    success, media = s_media_list(current_user_id_str, current_user_is_admin)
     return jsonify(media), 200
 
 @media_bp.route("/<int:media_id>", methods=["PATCH"])
@@ -375,6 +382,14 @@ def r_user_create():
     current_user_is_admin = g.current_user["is_admin"]
 
     data = request.get_json(silent=True) or {}
+
+    if ("password_hash" in data):
+        # confuse and/or foil attacker
+        # do not complain or error
+        # just make like the "pasword_hash" was passed as "password"
+        # and continue as normal
+        data["password"] = data["password_hash"]
+        data.pop("password_hash")
 
     success, data = s_user_create(current_user_id_str, current_user_is_admin, data)
 
@@ -601,6 +616,7 @@ def me_update():
 
 @users_bp.route("/<int:user_id>", methods=["GET"])
 @token_required
+@admin_required
 def r_user_get(user_id):
     """
     Get user by id
@@ -662,6 +678,7 @@ def r_user_get(user_id):
 
 @users_bp.route("", methods=["GET"])
 @token_required
+@admin_required
 def r_user_list():
     """
     List all users.
@@ -716,6 +733,7 @@ def r_user_list():
 
 @users_bp.route("/<int:user_id>", methods=["PATCH"])
 @token_required
+@admin_required
 def r_user_update(user_id):
     """
     Update the details and / or password for a user in the database.
@@ -874,6 +892,11 @@ def index():
 @root_bp.route("/admin/dashboard", methods=["GET"])
 def admin_dashboard_page():
     return render_template("admin_dashboard.html")
+
+# Serves the admin visual UI page
+@root_bp.route("/dashboard", methods=["GET"])
+def dashboard_page():
+    return render_template("dashboard.html")
 
 # Protected admin API endpoint called by the dashboard's JavaScript
 @root_bp.route("/api/admin/stats", methods=["GET"])

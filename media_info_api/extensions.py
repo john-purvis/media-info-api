@@ -2,7 +2,8 @@
 
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import MetaData
+from sqlalchemy import MetaData, event
+from sqlalchemy.engine import Engine
 
 # Define the convention template
 convention = {
@@ -29,3 +30,9 @@ media_db = SQLAlchemy(metadata=metadata)
 # So it is usually done in _init_.py so it can be enabled
 # only for SQLite...see _init_.py
 migrate = Migrate()
+
+@event.listens_for(Engine, "connect")
+def set_sqlite_pragma(dbapi_connection, connection_record):
+  cursor = dbapi_connection.cursor()
+  cursor.execute("PRAGMA foreign_keys=ON")
+  cursor.close()

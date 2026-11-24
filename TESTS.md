@@ -333,3 +333,117 @@ Content-Length: 26
 Connection: close
 
 {"error":"access denied"}
+
+$ curl -i -s -X GET "http://127.0.0.1:5000/users/3" -H "accept: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwianRpIjoiNjRmYmYxYmYtNDA3YS00YzBkLWJkMGMtNjY2ZjQ3OTBkNWNmIiwiaWF0IjoxNzk1MTU2MjYwLCJleHAiOjE3OTUxNjM0NjAsInVzZXJuYW1lIjoiZXJpY2EiLCJyb2xlIjoidXNlciIsImlzX2FkbWluIjpmYWxzZX0.7JXFW2s7ix-BR9KDl8G_mxl7jBmAaGvzd9Lg2313G98"
+HTTP/1.1 403 FORBIDDEN
+Server: Werkzeug/3.1.9 Python/3.14.8
+Date: Fri, 20 Nov 2026 06:32:19 GMT
+Content-Type: application/json
+Content-Length: 41
+Connection: close
+
+{"error":"elevated privileges required"}
+
+TEST LOGIN WITH NO USERNAME
+curl -i -X POST http://127.0.0.1:5000/login \
+  -H "Content-Type: application/json" \
+  -d '{"password": "something"}'
+HTTP/1.1 400 BAD REQUEST
+Server: Werkzeug/3.1.9 Python/3.14.8
+Date: Fri, 20 Nov 2026 01:30:16 GMT
+Content-Type: application/json
+Content-Length: 32
+Connection: close
+
+{"error":"missing credentials"}
+
+TEST LOGIN WITH GOOD ACCOUNT WRONG PASSWORD
+curl -i -X POST http://127.0.0.1:5000/login \
+  -H "Content-Type: application/json" \
+  -d '{"username": "patty", "password": "TotallyWrong123!"}'
+HTTP/1.1 401 UNAUTHORIZED
+Server: Werkzeug/3.1.9 Python/3.14.8
+Date: Fri, 20 Nov 2026 00:20:50 GMT
+Content-Type: application/json
+Content-Length: 25
+Connection: close
+
+{"error":"login failed"}
+
+TEST LOGIN WITH GOOD ACCOUNT BLANK PASSWORD
+$ curl -i -X POST http://127.0.0.1:5000/login \
+  -H "Content-Type: application/json" \
+  -d '{"username": "chad", "password": ""}'
+HTTP/1.1 401 UNAUTHORIZED
+Server: Werkzeug/3.1.9 Python/3.14.8
+Date: Fri, 20 Nov 2026 01:28:20 GMT
+Content-Type: application/json
+Content-Length: 25
+Connection: close
+
+{"error":"login failed"}
+
+==========================================================================================================
+VIEW ONLY OWNERS FILES BASED ON CURRENT USER ID
+
+# USER ID = 3
+curl -i -X POST http://127.0.0.1:5000/login   -H "Content-Type: application/json"   -d '{"username": "jerry", "password": "Pa55w0rd"}'
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzIiwianRpIjoiNjQ4ZGY0MDItODE4NC00N2U5LTg3ZDMtYzY4OWFkZmMzZjk0IiwiaWF0IjoxNzk1NTE3NjcxLCJleHAiOjE3OTU1MjQ4NzEsInVzZXJuYW1lIjoiamVycnkiLCJyb2xlIjoidXNlciIsImlzX2FkbWluIjpmYWxzZX0.tJglB5IOxwdZP7OKXTHBmPIfeiIVPp6BXWephffcA0Q"
+}
+
+# USER ID = 2
+curl -i -X POST http://127.0.0.1:5000/login   -H "Content-Type: application/json"   -d '{"username": "erica", "password": "Pa55w0rd"}'
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwianRpIjoiMjNlODNhMDAtZDA1Mi00YmI4LWI5ODEtN2NiZWVhY2U4OTI2IiwiaWF0IjoxNzk1NTE5NDk5LCJleHAiOjE3OTU1MjY2OTksInVzZXJuYW1lIjoiZXJpY2EiLCJyb2xlIjoidXNlciIsImlzX2FkbWluIjpmYWxzZX0.JC7UbNUyfKnWaa5FG2qyZYryR3CnDaURhzuAHeRf2-c"
+}
+
+
+# CREATE MEDIA AS USER 3
+curl -i   -X POST http://localhost:5000/media   -H "Content-Type: application/json"   -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzIiwianRpIjoiNjQ4ZGY0MDItODE4NC00N2U5LTg3ZDMtYzY4OWFkZmMzZjk0IiwiaWF0IjoxNzk1NTE3NjcxLCJleHAiOjE3OTU1MjQ4NzEsInVzZXJuYW1lIjoiamVycnkiLCJyb2xlIjoidXNlciIsImlzX2FkbWluIjpmYWxzZX0.tJglB5IOxwdZP7OKXTHBmPIfeiIVPp6BXWephffcA0Q"   -d '{
+    "title": "User A Movie",
+    "type": "movie",
+    "year": 2020
+  }'
+HTTP/1.1 201 CREATED
+Server: Werkzeug/3.1.9 Python/3.14.8
+Date: Tue, 24 Nov 2026 11:23:07 GMT
+Content-Type: application/json
+Content-Length: 202
+Connection: close
+
+{"id":5,"type":"movie","title":"User A Movie","year":2020,"duration":null,"certificate":null,"genres":null,"description":null,"imdb_id":null,"tmdb_id":null,"wiki_id":null,"catalog_id":null,"user_id":3}
+
+
+# CREATE MEDIA AS USER 2
+curl -i \
+  -X POST http://localhost:5000/media \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwianRpIjoiMjNlODNhMDAtZDA1Mi00YmI4LWI5ODEtN2NiZWVhY2U4OTI2IiwiaWF0IjoxNzk1NTE5NDk5LCJleHAiOjE3OTU1MjY2OTksInVzZXJuYW1lIjoiZXJpY2EiLCJyb2xlIjoidXNlciIsImlzX2FkbWluIjpmYWxzZX0.JC7UbNUyfKnWaa5FG2qyZYryR3CnDaURhzuAHeRf2-c" \
+  -d '{
+    "title": "User B Movie",
+    "type": "movie",
+    "year": 2021
+  }'
+HTTP/1.1 201 CREATED
+Server: Werkzeug/3.1.9 Python/3.14.8
+Date: Tue, 24 Nov 2026 11:26:26 GMT
+Content-Type: application/json
+Content-Length: 202
+Connection: close
+
+{"id":6,"type":"movie","title":"User B Movie","year":2021,"duration":null,"certificate":null,"genres":null,"description":null,"imdb_id":null,"tmdb_id":null,"wiki_id":null,"catalog_id":null,"user_id":2}
+
+
+# LIST MEDIA AS USER 3 (ONLY A's MEDIA SHOULD SHOW)
+curl -i \
+  -X GET http://localhost:5000/media \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzIiwianRpIjoiNjQ4ZGY0MDItODE4NC00N2U5LTg3ZDMtYzY4OWFkZmMzZjk0IiwiaWF0IjoxNzk1NTE3NjcxLCJleHAiOjE3OTU1MjQ4NzEsInVzZXJuYW1lIjoiamVycnkiLCJyb2xlIjoidXNlciIsImlzX2FkbWluIjpmYWxzZX0.tJglB5IOxwdZP7OKXTHBmPIfeiIVPp6BXWephffcA0Q"
+HTTP/1.1 200 OK
+Server: Werkzeug/3.1.9 Python/3.14.8
+Date: Tue, 24 Nov 2026 11:28:22 GMT
+Content-Type: application/json
+Content-Length: 204
+Connection: close
+
+[{"id":5,"type":"movie","title":"User A Movie","year":2020,"duration":null,"certificate":null,"genres":null,"description":null,"imdb_id":null,"tmdb_id":null,"wiki_id":null,"catalog_id":null,"user_id":3}]
