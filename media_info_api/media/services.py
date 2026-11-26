@@ -194,8 +194,8 @@ def s_media_create(data):
             # id             = data.get("id", None), \
             # media_id       = data.get("media_id", None), \
             media_id       = new_media.id, \
-            date_created   = data.get("date_created", None), \
-            date_archived  = data.get("date_archived", None), \
+            # date_created   = data.get("date_created", None), \
+            # date_archived  = data.get("date_archived", None), \
             location       = data.get("location", None), \
             label          = data.get("label", None), \
             file_media     = data.get("file_media", None), \
@@ -215,13 +215,14 @@ def s_media_create(data):
 
         # 6. Commit executes the final UPDATE and saves everything atomically
         media_db.session.commit()
-    except IntegrityError:
+    except IntegrityError as ie:  # noqa: F841
         media_db.session.rollback()
         return False, "media with that title already exists"
+    except Exception as e:  # noqa: BLE001
+         return False, f"{e._message()}"
 
     return True, media_to_dict(new_media)
     # return True, join_with_media(media_to_dict(new_media), catalog_to_dict(new_catalog))
-
 
 def s_media_get(current_user_id_str, current_user_is_admin, media_id):
     current_user_id = int(current_user_id_str)
@@ -276,20 +277,36 @@ def s_media_list(current_user_id_str, current_user_is_admin):
 
     return True, [media_to_dict(m) for m in media]
 
-def s_media_update(current_user_id, current_user_is_admin, media_id, data):
-    media = (
-        Media.query
-        .filter(
-            Media.id == media_id
+def s_media_update(current_user_id_str, current_user_is_admin, media_id, data):
+    current_user_id = int(current_user_id_str)
+
+    if current_user_is_admin:
+        # show all media if admin
+        media = (
+            Media.query
+            .filter(
+                Media.id == media_id
+            )
+            .first()
         )
-        .first()
-    )
+    else:
+        # filter media by user id if not admin
+        media = (
+            Media.query
+            .filter(
+                Media.id == media_id
+            )
+            .filter(
+                Media.user_id == current_user_id
+            )
+            .first()
+        )
     if not media:
         return False, "media not found"
 
-    # Check ownership using user_id
-    if str(media.user_id) != str(current_user_id) and not current_user_is_admin:
-        return False, "access denied"
+    # Filter by owner handles ownership check to maintain consistency and
+    # not leak information.  An attacker receiving 404 for GET, but 403 on
+    # UPDATE and DELETE would deduce that the ID existed. No 403 required here.
 
     # Helper method from db.py to update only valid fields
     # id and /or date_created are already excluded
@@ -320,26 +337,50 @@ def s_media_update(current_user_id, current_user_is_admin, media_id, data):
                 return False, "media with that wiki_id already exists"
             if "catalog_id" in ie._message():
                 return False, "media with that catalog_id already exists"
+    except Exception as e:  # noqa: BLE001
+         # This could happen if the database is locked
+         return False, f"{e._message()}"
 
     return True, media_to_dict(media)
 
-def s_media_delete(current_user_id, current_user_is_admin, media_id):
-    media = (
-        Media.query
-        .filter(
-            Media.id == media_id
+def s_media_delete(current_user_id_str, current_user_is_admin, media_id):
+    current_user_id = int(current_user_id_str)
+
+    if current_user_is_admin:
+        # show all media if admin
+        media = (
+            Media.query
+            .filter(
+                Media.id == media_id
+            )
+            .first()
         )
-        .first()
-    )
+    else:
+        # filter media by user id if not admin
+        media = (
+            Media.query
+            .filter(
+                Media.id == media_id
+            )
+            .filter(
+                Media.user_id == current_user_id
+            )
+            .first()
+        )
     if not media:
         return False, "media not found"
 
-    # Check ownership using user_id
-    if str(media.user_id) != str(current_user_id) and current_user_is_admin is not True:
-        return False, "access denied"
+    # Filter by owner handles ownership check to maintain consistency and
+    # not leak information.  An attacker receiving 404 for GET, but 403 on
+    # UPDATE and DELETE would deduce that the ID existed. No 403 required here.
 
     media_db.session.delete(media)
-    media_db.session.commit()
+    try:
+        media_db.session.commit()
+    except Exception as e:  # noqa: BLE001
+         # This could happen if the database is locked
+         return False, f"{e._message()}"
+
     return True, "media deleted"
 
 # user services ================================================================
@@ -357,16 +398,6 @@ def s_user_login(username: str, password: str):
 
     if user and check_password_hash(user.password_hash, password):
         user = user_to_dict(user)
-
-        if user["is_admin"] == 1 or \
-            user["is_admin"] == True or \
-            user["is_admin"] == "True":
-            user["is_admin"] = True
-        else:
-            user["is_admin"] = False
-
-        # remove password hash from user
-        user.pop("password_hash")
         return True, user
     else:
         return False, "invalid username or password"
@@ -399,14 +430,7 @@ def s_user_create(current_user_id, current_user_is_admin, data):
     phone = data.get("phone")
     is_admin = data.get("is_admin")
 
-    if not username or not password:
-        return False, "username and password required"
-
     password_hash = generate_password_hash(password)
-
-    # if not admin then cannot create an admin account
-    if not current_user_is_admin:
-        is_admin = False
 
     user = User(
         username=username,
@@ -474,16 +498,11 @@ def s_user_get(current_user_id, current_user_is_admin, user_id):
         return False, "user not found"
 
     user = user_to_dict(user)
-    if current_user_is_admin is not True:
-        # remove password hash from user
-        if "password_hash" in user:
-            user.pop("password_hash")
-        # remove is_admin from user
-        if "is_admin" in user:
-            user.pop("is_admin")
     return True, user
 
-def s_user_list(current_user_id, current_user_is_admin):
+def s_user_list(current_user_id_str, current_user_is_admin):
+    current_user_id = int(current_user_id_str)
+
     if current_user_is_admin:
         users = (
             User.query
@@ -501,58 +520,42 @@ def s_user_list(current_user_id, current_user_is_admin):
             .all()
         )
         users = [user_to_dict(u) for u in users]
-
-    if not current_user_is_admin:
-        # remove password hash from all users
-        for u in users: u.pop("password_hash")
-        # remove is_admin from all users
-        for u in users: u.pop("is_admin")
     return True, users
 
-def s_user_update(current_user_id, current_user_is_admin, user_id, data):
-    user = (
-        User.query
-        .filter(
-            User.id == user_id
+def s_user_update(current_user_id_str, current_user_is_admin, user_id, data):
+    current_user_id = int(current_user_id_str)
+
+    if current_user_is_admin:
+        # show requested user if admin
+        user = (
+            User.query
+            .filter(
+                User.id == user_id
+            )
+            .first()
         )
-        .first()
-    )
+    else:
+        # filter user by current user id if not admin
+        if user_id == current_user_id:
+            user = (
+                User.query
+                .filter(
+                    User.id == current_user_id
+                )
+                .first()
+            )
+        else:
+            user = None
 
     if not user:
         return False, "user not found"
 
-    # check ownership for update operation - only the owner or an admin can update a user
-    if str(user.id) != str(current_user_id) and current_user_is_admin is not True:
-        return False, "access denied"
+    # Filter by owner handles ownership check to maintain consistency and
+    # not leak information.  An attacker receiving 404 for GET, but 403 on
+    # UPDATE and DELETE would deduce that the ID existed. No 403 required here.
 
     # IF WE GET HERE THEN WE ARE AUTHENTICATED and AUTHORIZED
     # ...and have a user object
-
-    if "password" in data and data["password"].strip() == "":
-        # but password in blank
-        if not current_user_is_admin:
-            # NOT admin, don't update to blank if not admin
-            data.pop("password")
-            return False, "a valid non-blank password is required"
-
-        # hash the password, and swap password field for password_hash field
-        data["password_hash"] = generate_password_hash(data["password"])
-        data.pop("password")
-
-    if "is_admin" in data:
-        # is_admin is in data to be updated
-        if current_user_is_admin is True:
-            # only update is_admin if current user is admin
-            # do not report the error, just silently fail to update
-            # so as not to give a potential attacker more information
-            if data["is_admin"] == 1 or \
-                data["is_admin"] == True or \
-                data["is_admin"] == "True":
-                data["is_admin"] = True
-            else:
-                data["is_admin"] = False
-        else:
-            data.pop("is_admin")
 
     # Helper method from db.py to update only valid fields
     # id and /or date_created are already excluded
@@ -563,13 +566,6 @@ def s_user_update(current_user_id, current_user_is_admin, user_id, data):
     try:
         media_db.session.commit()
         user = user_to_dict(user)
-        if current_user_is_admin is not True:
-            # remove password hash from user
-            if "password_hash" in user:
-                user.pop("password_hash")
-            # remove is_admin from user
-            if "is_admin" in user:
-                user.pop("is_admin")
         return True, user
     except IntegrityError as ie:
         media_db.session.rollback()
@@ -583,22 +579,35 @@ def s_user_update(current_user_id, current_user_is_admin, user_id, data):
         media_db.session.rollback()
         return False, "an error has occurred - contact the adminstrator"
 
-def s_user_delete(current_user_id, current_user_is_admin, user_id):
-    user = (
-        User.query
-        .filter(
-            User.id == user_id
+def s_user_delete(current_user_id_str, current_user_is_admin, user_id):
+    current_user_id = int(current_user_id_str)
+
+    if current_user_is_admin:
+        # get requested user if admin
+        user = (
+            User.query
+            .filter(
+                User.id == user_id
+            )
+            .first()
         )
-        .first()
-    )
+    else:
+        # filter user by current user id if not admin
+        if user_id == current_user_id:
+            user = (
+                User.query
+                .filter(
+                    User.id == current_user_id
+                )
+                .first()
+            )
+        else:
+            user = None
+
     if not user:
         return False, "user not found"
 
-    if current_user_is_admin is not True:
-        return False, "access denied"
-
     media_db.session.delete(user)
-
     try:
         media_db.session.commit()
         return True, "user deleted"

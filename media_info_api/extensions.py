@@ -36,3 +36,11 @@ def set_sqlite_pragma(dbapi_connection, connection_record):
   cursor = dbapi_connection.cursor()
   cursor.execute("PRAGMA foreign_keys=ON")
   cursor.close()
+
+class APIError(Exception):
+    def __init__(self, code=400, name=None, message=None, details=None):
+        super().__init__(message)
+        self.code = code
+        self.name = name or "API_ERROR"
+        self.message = message
+        self.details = details or {}

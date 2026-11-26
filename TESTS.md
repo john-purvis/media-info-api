@@ -497,3 +497,257 @@ Connection: close
 
 
 ============================================================================
+# TEST UPDATE AND DELETE MEDIA (TOKENS ARE DIFF BECAUSE UPDATE TESTED AFTER CREATE)
+user 2 erica = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwianRpIjoiOGM3OTNjMDYtOTIxYy00Njc0LWJiZmYtYjkwZDU1ZmZjMjFiIiwiaWF0IjoxNzk1NTYyMzk1LCJleHAiOjE3OTU1Njk1OTUsInVzZXJuYW1lIjoiZXJpY2EiLCJyb2xlIjoidXNlciIsImlzX2FkbWluIjpmYWxzZX0.kNXL--9PxPgpPTz5FxHkAmmWcEZFKwuK5u0suFvH8Co
+
+curl -X POST "http://127.0.0.1:5000/login" -H "accept: application/json" -H "Content-Type: application/json" -d "{ \"username\": \"erica\", \"password\": \"Pa55w0rd\"}"
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwianRpIjoiOGM3OTNjMDYtOTIxYy00Njc0LWJiZmYtYjkwZDU1ZmZjMjFiIiwiaWF0IjoxNzk1NTYyMzk1LCJleHAiOjE3OTU1Njk1OTUsInVzZXJuYW1lIjoiZXJpY2EiLCJyb2xlIjoidXNlciIsImlzX2FkbWluIjpmYWxzZX0.kNXL--9PxPgpPTz5FxHkAmmWcEZFKwuK5u0suFvH8Co"
+}
+
+user 3 jerry = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzIiwianRpIjoiMzA0MzkzMDEtNzc4Mi00YWZlLThlMTAtOGZkZDc2NjJiOTVjIiwiaWF0IjoxNzk1NTYyNDcyLCJleHAiOjE3OTU1Njk2NzIsInVzZXJuYW1lIjoiamVycnkiLCJyb2xlIjoidXNlciIsImlzX2FkbWluIjpmYWxzZX0.N-0psr7p8BPH3thPHImgYfOmGN3bVo4kenPqGMB1UKU
+
+curl -X POST "http://127.0.0.1:5000/login" -H "accept: application/json" -H "Content-Type: application/json" -d "{ \"username\": \"jerry\", \"password\": \"Pa55w0rd\"}"
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzIiwianRpIjoiMzA0MzkzMDEtNzc4Mi00YWZlLThlMTAtOGZkZDc2NjJiOTVjIiwiaWF0IjoxNzk1NTYyNDcyLCJleHAiOjE3OTU1Njk2NzIsInVzZXJuYW1lIjoiamVycnkiLCJyb2xlIjoidXNlciIsImlzX2FkbWluIjpmYWxzZX0.N-0psr7p8BPH3thPHImgYfOmGN3bVo4kenPqGMB1UKU"
+}
+
+# CREATE MEDIA AS USER 3
+curl -i -X POST http://localhost:5000/media   \
+-H "Content-Type: application/json"   \
+-H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzIiwianRpIjoiMzA0MzkzMDEtNzc4Mi00YWZlLThlMTAtOGZkZDc2NjJiOTVjIiwiaWF0IjoxNzk1NTYyNDcyLCJleHAiOjE3OTU1Njk2NzIsInVzZXJuYW1lIjoiamVycnkiLCJyb2xlIjoidXNlciIsImlzX2FkbWluIjpmYWxzZX0.N-0psr7p8BPH3thPHImgYfOmGN3bVo4kenPqGMB1UKU"   \
+-d '{
+    "title": "User A Movie",
+    "type": "movie",
+    "year": 2020
+  }'
+HTTP/1.1 201 CREATED
+Server: Werkzeug/3.1.9 Python/3.14.8
+Date: Tue, 24 Nov 2026 23:28:23 GMT
+Content-Type: application/json
+Content-Length: 199
+Connection: close
+
+{"id":5,"type":"movie","title":"User A Movie","year":2020,"duration":null,"certificate":null,"genres":null,"description":null,"imdb_id":null,"tmdb_id":null,"wiki_id":null,"catalog_id":5,"user_id":3}
+
+
+# CREATE MEDIA AS USER 2
+curl -i -X POST http://localhost:5000/media \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwianRpIjoiOGM3OTNjMDYtOTIxYy00Njc0LWJiZmYtYjkwZDU1ZmZjMjFiIiwiaWF0IjoxNzk1NTYyMzk1LCJleHAiOjE3OTU1Njk1OTUsInVzZXJuYW1lIjoiZXJpY2EiLCJyb2xlIjoidXNlciIsImlzX2FkbWluIjpmYWxzZX0.kNXL--9PxPgpPTz5FxHkAmmWcEZFKwuK5u0suFvH8Co" \
+  -d '{
+    "title": "User B Movie",
+    "type": "movie",
+    "year": 2021
+  }'
+HTTP/1.1 201 CREATED
+Server: Werkzeug/3.1.9 Python/3.14.8
+Date: Tue, 24 Nov 2026 23:28:57 GMT
+Content-Type: application/json
+Content-Length: 199
+Connection: close
+
+{"id":6,"type":"movie","title":"User B Movie","year":2021,"duration":null,"certificate":null,"genres":null,"description":null,"imdb_id":null,"tmdb_id":null,"wiki_id":null,"catalog_id":6,"user_id":2}
+
+
+
+# READ MEDIA 5 USER 2
+curl -i -X GET "http://127.0.0.1:5000/media/5" -H "accept: application/json" \
+-H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzIiwianRpIjoiMzA0MzkzMDEtNzc4Mi00YWZlLThlMTAtOGZkZDc2NjJiOTVjIiwiaWF0IjoxNzk1NTYyNDcyLCJleHAiOjE3OTU1Njk2NzIsInVzZXJuYW1lIjoiamVycnkiLCJyb2xlIjoidXNlciIsImlzX2FkbWluIjpmYWxzZX0.N-0psr7p8BPH3thPHImgYfOmGN3bVo4kenPqGMB1UKU"
+HTTP/1.1 200 OK
+Server: Werkzeug/3.1.9 Python/3.14.8
+Date: Tue, 24 Nov 2026 23:43:29 GMT
+Content-Type: application/json
+Content-Length: 199
+Connection: close
+
+{"id":5,"type":"movie","title":"User A Movie","year":2020,"duration":null,"certificate":null,"genres":null,"description":null,"imdb_id":null,"tmdb_id":null,"wiki_id":null,"catalog_id":5,"user_id":3}
+
+
+
+# READ MEDIA 6 USER 2
+curl -i -X GET "http://127.0.0.1:5000/media/6" -H "accept: application/json" \
+-H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzIiwianRpIjoiMzA0MzkzMDEtNzc4Mi00YWZlLThlMTAtOGZkZDc2NjJiOTVjIiwiaWF0IjoxNzk1NTYyNDcyLCJleHAiOjE3OTU1Njk2NzIsInVzZXJuYW1lIjoiamVycnkiLCJyb2xlIjoidXNlciIsImlzX2FkbWluIjpmYWxzZX0.N-0psr7p8BPH3thPHImgYfOmGN3bVo4kenPqGMB1UKU"
+HTTP/1.1 404 NOT FOUND
+Server: Werkzeug/3.1.9 Python/3.14.8
+Date: Tue, 24 Nov 2026 23:43:48 GMT
+Content-Type: application/json
+Content-Length: 28
+Connection: close
+
+{"error":"media not found"}
+
+
+
+# READ MEDIA 5 USER 3
+curl -i -X GET "http://127.0.0.1:5000/media/5" -H "accept: application/json" \
+-H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzIiwianRpIjoiMzA0MzkzMDEtNzc4Mi00YWZlLThlMTAtOGZkZDc2NjJiOTVjIiwiaWF0IjoxNzk1NTYyNDcyLCJleHAiOjE3OTU1Njk2NzIsInVzZXJuYW1lIjoiamVycnkiLCJyb2xlIjoidXNlciIsImlzX2FkbWluIjpmYWxzZX0.N-0psr7p8BPH3thPHImgYfOmGN3bVo4kenPqGMB1UKU"
+HTTP/1.1 200 OK
+Server: Werkzeug/3.1.9 Python/3.14.8
+Date: Tue, 24 Nov 2026 23:44:07 GMT
+Content-Type: application/json
+Content-Length: 199
+Connection: close
+
+{"id":5,"type":"movie","title":"User A Movie","year":2020,"duration":null,"certificate":null,"genres":null,"description":null,"imdb_id":null,"tmdb_id":null,"wiki_id":null,"catalog_id":5,"user_id":3}
+
+
+
+# READ MEDIA 6 AS USER 3
+curl -i -X GET "http://127.0.0.1:5000/media/6" -H "accept: application/json" \
+-H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzIiwianRpIjoiMzA0MzkzMDEtNzc4Mi00YWZlLThlMTAtOGZkZDc2NjJiOTVjIiwiaWF0IjoxNzk1NTYyNDcyLCJleHAiOjE3OTU1Njk2NzIsInVzZXJuYW1lIjoiamVycnkiLCJyb2xlIjoidXNlciIsImlzX2FkbWluIjpmYWxzZX0.N-0psr7p8BPH3thPHImgYfOmGN3bVo4kenPqGMB1UKU"
+HTTP/1.1 404 NOT FOUND
+Server: Werkzeug/3.1.9 Python/3.14.8
+Date: Tue, 24 Nov 2026 23:44:25 GMT
+Content-Type: application/json
+Content-Length: 28
+Connection: close
+
+{"error":"media not found"}
+
+
+
+
+
+# UPDATE MEDIA 5 (OWNED BY 3) WITH USER 2 "erica"
+curl -i -X PATCH "http://127.0.0.1:5000/media/5" -H "accept: application/json" \
+-H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwianRpIjoiOGM3OTNjMDYtOTIxYy00Njc0LWJiZmYtYjkwZDU1ZmZjMjFiIiwiaWF0IjoxNzk1NTYyMzk1LCJleHAiOjE3OTU1Njk1OTUsInVzZXJuYW1lIjoiZXJpY2EiLCJyb2xlIjoidXNlciIsImlzX2FkbWluIjpmYWxzZX0.kNXL--9PxPgpPTz5FxHkAmmWcEZFKwuK5u0suFvH8Co" \
+-H "Content-Type: application/json" \
+-d "{\"year\": 1972}"
+HTTP/1.1 404 NOT FOUND
+Server: Werkzeug/3.1.9 Python/3.14.8
+Date: Tue, 24 Nov 2026 23:29:21 GMT
+Content-Type: application/json
+Content-Length: 28
+Connection: close
+
+{"error":"media not found"}
+
+
+# UPDATE MEDIA 6 (OWNED BY 2) WITH USER 2 "erica"
+curl -i -X PATCH "http://127.0.0.1:5000/media/6" -H "accept: application/json" \
+-H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwianRpIjoiOGM3OTNjMDYtOTIxYy00Njc0LWJiZmYtYjkwZDU1ZmZjMjFiIiwiaWF0IjoxNzk1NTYyMzk1LCJleHAiOjE3OTU1Njk1OTUsInVzZXJuYW1lIjoiZXJpY2EiLCJyb2xlIjoidXNlciIsImlzX2FkbWluIjpmYWxzZX0.kNXL--9PxPgpPTz5FxHkAmmWcEZFKwuK5u0suFvH8Co" \
+-H "Content-Type: application/json" \
+-d "{\"year\": 1972}"
+HTTP/1.1 200 OK
+Server: Werkzeug/3.1.9 Python/3.14.8
+Date: Tue, 24 Nov 2026 23:29:50 GMT
+Content-Type: application/json
+Content-Length: 199
+Connection: close
+
+{"id":6,"type":"movie","title":"User B Movie","year":1972,"duration":null,"certificate":null,"genres":null,"description":null,"imdb_id":null,"tmdb_id":null,"wiki_id":null,"catalog_id":6,"user_id":2}
+
+
+# UPDATE MEDIA 6 (OWNED BY 2) WITH USER 3 "jerry"
+curl -i -X PATCH "http://127.0.0.1:5000/media/6" -H "accept: application/json" \
+-H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzIiwianRpIjoiMzA0MzkzMDEtNzc4Mi00YWZlLThlMTAtOGZkZDc2NjJiOTVjIiwiaWF0IjoxNzk1NTYyNDcyLCJleHAiOjE3OTU1Njk2NzIsInVzZXJuYW1lIjoiamVycnkiLCJyb2xlIjoidXNlciIsImlzX2FkbWluIjpmYWxzZX0.N-0psr7p8BPH3thPHImgYfOmGN3bVo4kenPqGMB1UKU" \
+-H "Content-Type: application/json" \
+-d "{\"year\": 1973}"
+HTTP/1.1 404 NOT FOUND
+Server: Werkzeug/3.1.9 Python/3.14.8
+Date: Tue, 24 Nov 2026 23:30:20 GMT
+Content-Type: application/json
+Content-Length: 28
+Connection: close
+
+{"error":"media not found"}
+
+
+# UPDATE MEDIA 5 (OWNED BY 3) WITH USER 3 "jerry"
+curl -i -X PATCH "http://127.0.0.1:5000/media/5" -H "accept: application/json" \
+-H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzIiwianRpIjoiMzA0MzkzMDEtNzc4Mi00YWZlLThlMTAtOGZkZDc2NjJiOTVjIiwiaWF0IjoxNzk1NTYyNDcyLCJleHAiOjE3OTU1Njk2NzIsInVzZXJuYW1lIjoiamVycnkiLCJyb2xlIjoidXNlciIsImlzX2FkbWluIjpmYWxzZX0.N-0psr7p8BPH3thPHImgYfOmGN3bVo4kenPqGMB1UKU" \
+-H "Content-Type: application/json" \
+-d "{\"year\": 1973}"
+HTTP/1.1 200 OK
+Server: Werkzeug/3.1.9 Python/3.14.8
+Date: Tue, 24 Nov 2026 23:30:58 GMT
+Content-Type: application/json
+Content-Length: 199
+Connection: close
+
+{"id":5,"type":"movie","title":"User A Movie","year":1973,"duration":null,"certificate":null,"genres":null,"description":null,"imdb_id":null,"tmdb_id":null,"wiki_id":null,"catalog_id":5,"user_id":3}
+
+
+# DELETE MEDIA 5 (OWNED BY 3) WITH USER 2 "erica"
+curl -i -X DELETE "http://127.0.0.1:5000/media/5" -H "accept: application/json" \
+-H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwianRpIjoiOGM3OTNjMDYtOTIxYy00Njc0LWJiZmYtYjkwZDU1ZmZjMjFiIiwiaWF0IjoxNzk1NTYyMzk1LCJleHAiOjE3OTU1Njk1OTUsInVzZXJuYW1lIjoiZXJpY2EiLCJyb2xlIjoidXNlciIsImlzX2FkbWluIjpmYWxzZX0.kNXL--9PxPgpPTz5FxHkAmmWcEZFKwuK5u0suFvH8Co"
+HTTP/1.1 404 NOT FOUND
+Server: Werkzeug/3.1.9 Python/3.14.8
+Date: Tue, 24 Nov 2026 23:31:17 GMT
+Content-Type: application/json
+Content-Length: 28
+Connection: close
+
+{"error":"media not found"}
+
+
+# DELETE MEDIA 6 (OWNED BY 2) WITH USER 3 "jerry"
+curl -i -X DELETE "http://127.0.0.1:5000/media/6" -H "accept: application/json" \
+-H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzIiwianRpIjoiMzA0MzkzMDEtNzc4Mi00YWZlLThlMTAtOGZkZDc2NjJiOTVjIiwiaWF0IjoxNzk1NTYyNDcyLCJleHAiOjE3OTU1Njk2NzIsInVzZXJuYW1lIjoiamVycnkiLCJyb2xlIjoidXNlciIsImlzX2FkbWluIjpmYWxzZX0.N-0psr7p8BPH3thPHImgYfOmGN3bVo4kenPqGMB1UKU"
+HTTP/1.1 404 NOT FOUND
+Server: Werkzeug/3.1.9 Python/3.14.8
+Date: Tue, 24 Nov 2026 23:31:38 GMT
+Content-Type: application/json
+Content-Length: 28
+Connection: close
+
+{"error":"media not found"}
+
+
+# DELETE MEDIA 6 (OWNED BY 2) WITH USER 2 "erica"
+curl -i -X DELETE "http://127.0.0.1:5000/media/6" -H "accept: application/json" \
+-H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwianRpIjoiOGM3OTNjMDYtOTIxYy00Njc0LWJiZmYtYjkwZDU1ZmZjMjFiIiwiaWF0IjoxNzk1NTYyMzk1LCJleHAiOjE3OTU1Njk1OTUsInVzZXJuYW1lIjoiZXJpY2EiLCJyb2xlIjoidXNlciIsImlzX2FkbWluIjpmYWxzZX0.kNXL--9PxPgpPTz5FxHkAmmWcEZFKwuK5u0suFvH8Co"
+HTTP/1.1 204 NO CONTENT
+Server: Werkzeug/3.1.9 Python/3.14.8
+Date: Tue, 24 Nov 2026 23:32:00 GMT
+Content-Type: text/html; charset=utf-8
+Connection: close
+
+
+# DELETE MEDIA 5 (OWNED BY 3) WITH USER 3 "jerry"
+curl -i -X DELETE "http://127.0.0.1:5000/media/5" -H "accept: application/json" \
+-H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzIiwianRpIjoiMzA0MzkzMDEtNzc4Mi00YWZlLThlMTAtOGZkZDc2NjJiOTVjIiwiaWF0IjoxNzk1NTYyNDcyLCJleHAiOjE3OTU1Njk2NzIsInVzZXJuYW1lIjoiamVycnkiLCJyb2xlIjoidXNlciIsImlzX2FkbWluIjpmYWxzZX0.N-0psr7p8BPH3thPHImgYfOmGN3bVo4kenPqGMB1UKU"
+HTTP/1.1 204 NO CONTENT
+Server: Werkzeug/3.1.9 Python/3.14.8
+Date: Tue, 24 Nov 2026 23:32:19 GMT
+Content-Type: text/html; charset=utf-8
+Connection: close
+
+
+# MALFORMED TOKEN
+curl -i -X GET "http://127.0.0.1:5000/media/6" -H "accept: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzIiwianRpIjoiMzA0MzkzMDEtNzc4Mi00YWZlLThlMTAtOGZkZDc2NjJiOTVjIiwiaWF0IjoxNzk1NTYyNDcyLCJleHAiOjE3OTU1Njk2NzIsInVzZXJuYW1lIjoiamVycnkiLCJyb2xlIjoidXNlciIsImlzX2FkbWluIjpmYWxzZX0.N-0psr7p8BPH3thPHImgYfOmGN3bVo4kenPqGMB1U"
+HTTP/1.1 401 UNAUTHORIZED
+Server: Werkzeug/3.1.9 Python/3.14.8
+Date: Tue, 24 Nov 2026 23:45:45 GMT
+Content-Type: application/json
+Content-Length: 26
+Connection: close
+
+{"error":"invalid token"}
+
+# AUTH HEADER NO TOKEN
+curl -i -X GET "http://127.0.0.1:5000/media/6" -H "accept: application/json" -H "Authorization: Bearer "
+HTTP/1.1 401 UNAUTHORIZED
+Server: Werkzeug/3.1.9 Python/3.14.8
+Date: Tue, 24 Nov 2026 23:46:32 GMT
+Content-Type: application/json
+Content-Length: 26
+Connection: close
+
+{"error":"invalid token"}
+
+# NO AUTH HEADER
+curl -i -X GET "http://127.0.0.1:5000/media/6" -H "accept: application/json"
+HTTP/1.1 401 UNAUTHORIZED
+Server: Werkzeug/3.1.9 Python/3.14.8
+Date: Tue, 24 Nov 2026 23:47:05 GMT
+Content-Type: application/json
+Content-Length: 54
+Connection: close
+
+{"error":"missing or malformed authorization header"}
+
+
+
+================================================================================================

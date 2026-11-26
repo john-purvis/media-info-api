@@ -1,6 +1,14 @@
 # media_info_api/media/routes.py
 
-from flask import Blueprint, g, jsonify, render_template, request, send_from_directory
+from flask import (
+    Blueprint,
+    g,
+    jsonify,
+    render_template,
+    request,
+    send_from_directory,
+)
+from werkzeug.security import generate_password_hash
 
 from media_info_api.media.services import (
     s_health_check,
@@ -85,6 +93,18 @@ def media_create():
 
     data = request.get_json(silent=True) or {}
 
+    if not data:
+        return jsonify({"error": "a JSON body is required"}), 400
+    if "user_id" in data:  # noqa: SIM102
+      if data["user_id"] == None or data["user_id"].strip() == "":
+        return jsonify({"error": "user_id is required"}), 400
+    if "type" in data:  # noqa: SIM102
+      if data["type"] == None or data["type"].strip() == "":
+        return jsonify({"error": "type is required"}), 400
+    if "title" in data:  # noqa: SIM102
+      if data["title"] == None or data["title"].strip() == "":
+        return jsonify({"error": "title is required"}), 400
+
     # replace any user_id with the current user id
     data["user_id"] = int(current_user_id_str)
 
@@ -94,6 +114,9 @@ def media_create():
             return jsonify({"error": f"{data}"}), 400
         if "already exists" in data:
             return jsonify({"error": f"{data}"}), 409
+        if "database is locked" in data:
+            return jsonify({"error": "the database is locked - contact the administrator"}), 500
+
         return jsonify({"error": "an error has occurred - contact the administrator"}), 500
 
     return jsonify(data), 201
@@ -218,7 +241,6 @@ def r_media_list():
     current_user_id_str   = g.current_user["sub"]
     current_username      = g.current_user["username"]  # noqa: F841
     current_user_is_admin = g.current_user["is_admin"]
-
     success, media = s_media_list(current_user_id_str, current_user_is_admin)  # noqa: RUF059
     return jsonify(media), 200
 
@@ -243,12 +265,26 @@ def r_media_update(media_id):
         schema:
           type: object
           properties:
-            password:
+            title:
               type: string
-            email:
+            year:
+              type: integer
+            duration:
               type: string
-            phone:
+            certificate:
               type: string
+            genres:
+              type: string
+            description:
+              type: string
+            imdb_id:
+              type: string
+            tmdb_id:
+              type: string
+            wiki_id:
+              type: string
+            catalog_id:
+              type: integer
     responses:
       200:
         description: Media updated successfully
@@ -257,25 +293,39 @@ def r_media_update(media_id):
             schema:
             type: object
             properties:
-            id:
+            title:
+              type: string
+            year:
               type: integer
-            email:
+            duration:
               type: string
-            phone:
+            certificate:
               type: string
-            is_admin:
-              type: boolean
+            genres:
+              type: string
+            description:
+              type: string
+            imdb_id:
+              type: string
+            tmdb_id:
+              type: string
+            wiki_id:
+              type: string
+            catalog_id:
+              type: integer
       400:
         description: Invalid request body
       401:
         description: Unauthorized (not logged in)
-      403:
-        description: Access denied (not the owner or an admin)
       404:
         description: Media not found
       409:
         description: Media with that title already exists
     """
+    # Filter by owner handles ownership check to maintain consistency and
+    # not leak information.  An attacker receiving 404 for GET, but 403 on
+    # UPDATE and DELETE would deduce that the ID existed. No 403 required here.
+
     # get custom claims from "g"
     current_user_id_str   = g.current_user["sub"]
     current_username      = g.current_user["username"]  # noqa: F841
@@ -284,19 +334,31 @@ def r_media_update(media_id):
     data = request.get_json(silent=True)
     if not data:
         return jsonify({"error": "a JSON body is required"}), 400
+    if "user_id" in data:  # noqa: SIM102
+      if data["user_id"] == None or data["user_id"].strip() == "":
+        return jsonify({"error": "user_id is required"}), 400
+    if "type" in data:  # noqa: SIM102
+      if data["type"] == None or data["type"].strip() == "":
+        return jsonify({"error": "type is required"}), 400
+    if "title" in data:  # noqa: SIM102
+      if data["title"] == None or data["title"].strip() == "":
+        return jsonify({"error": "title is required"}), 400
 
     success, data = s_media_update(current_user_id_str, current_user_is_admin, media_id, data)
 
     if not success:
         if "nothing to update" in data:
             return jsonify({"error": "nothing to update"}), 400
-        if "access denied" in data:
-            return jsonify({"error": f"{data}"}), 403
+        if "required" in data:
+            return jsonify({"error": f"{data}"}), 400
         if "not found" in data:
             return jsonify({"error": f"{data}"}), 404
         if "already exists" in data:
             return jsonify({"error": f"{data}"}), 409
-        return jsonify({"error": f"{data}"}), 500
+        if "database is locked" in data:
+            return jsonify({"error": "the database is locked - contact the administrator"}), 500
+
+        return jsonify({"error": "an error has occurred - contact the administrator"}), 500
 
     return jsonify(data), 200
 
@@ -320,11 +382,13 @@ def r_media_delete(media_id):
         description: Media deleted successfully
       401:
         description: Unauthorized (not logged in)
-      403:
-        description: Access denied (not the owner or an admin)
       404:
         description: Media not found
     """
+    # Filter by owner handles ownership check to maintain consistency and
+    # not leak information.  An attacker receiving 404 for GET, but 403 on
+    # UPDATE and DELETE would deduce that the ID existed. No 403 required here.
+
     # get custom claims from "g"
     current_user_id_str   = g.current_user["sub"]
     current_username      = g.current_user["username"]  # noqa: F841
@@ -333,10 +397,12 @@ def r_media_delete(media_id):
     success, data = s_media_delete(current_user_id_str, current_user_is_admin, media_id)
 
     if not success:
-      if data == "media_not_found":
+      if "media not found" in data:
           return jsonify({"error": "media not found"}), 404
-      if data == "access_denied":
-          return jsonify({"error": "access denied"}), 403
+      if "database is locked" in data:
+          return jsonify({"error": "the database is locked - contact the administrator"}), 500
+
+      return jsonify({"error": "an error has occurred - contact the administrator"}), 500
 
     return "", 204
 #endregion
@@ -391,6 +457,14 @@ def r_user_create():
         data["password"] = data["password_hash"]
         data.pop("password_hash")
 
+    # if not admin then cannot create an admin account
+    # just take it out and don't complain
+    if not current_user_is_admin:
+        data.pop("is_admin")
+
+    if not data["username"] or not data["password"]:
+        return jsonify({"error": "username and password required"}), 400
+
     success, data = s_user_create(current_user_id_str, current_user_is_admin, data)
 
     if not success:
@@ -441,6 +515,16 @@ def r_user_login():
 
     if not success:
       return jsonify({"error": "login failed"}), 401
+
+    if data["is_admin"] == 1 or \
+        data["is_admin"] == True or \
+        data["is_admin"] == "True":
+        data["is_admin"] = True
+    else:
+        data["is_admin"] = False
+
+    # remove password hash from user
+    data.pop("password_hash")
 
     # Generate token with (user id) identity and extra attributes
     token = create_access_token(user_id=data["id"], username=data["username"], role=data["role"], is_admin=data["is_admin"])
@@ -797,6 +881,32 @@ def r_user_update(user_id):
 
     if not user_id:
       return jsonify({"error": "nothing to update"}), 400
+
+    if "password" in data and data["password"].strip() == "":
+        # but password in blank
+        if not current_user_is_admin:
+            # NOT admin, don't update to blank if not admin
+            data.pop("password")
+            return False, "a valid non-blank password is required"
+
+        # hash the password, and swap password field for password_hash field
+        data["password_hash"] = generate_password_hash(data["password"])
+        data.pop("password")
+
+    if "is_admin" in data:
+        # is_admin is in data to be updated
+        if current_user_is_admin is True:
+            # only update is_admin if current user is admin
+            # do not report the error, just silently fail to update
+            # so as not to give a potential attacker more information
+            if data["is_admin"] == 1 or \
+                data["is_admin"] == True or \
+                data["is_admin"] == "True":
+                data["is_admin"] = True
+            else:
+                data["is_admin"] = False
+        else:
+            data.pop("is_admin")
 
     success, data = s_user_update(current_user_id_str, current_user_is_admin, user_id, data)
 

@@ -3,7 +3,7 @@ import os
 
 from dotenv import load_dotenv
 from flasgger import Swagger
-from flask import Flask
+from flask import Flask, jsonify
 from werkzeug.security import generate_password_hash
 
 from media_info_api.config import DevelopmentConfig, ProductionConfig, TestingConfig
@@ -59,6 +59,27 @@ def create_app(config_name="development"):
         print(f"    DATA_BASE_PATH               = {DATA_BASE_PATH}")
         print(f"    MEDIA_BASE_PATH              = {MEDIA_BASE_PATH}")
 
+    @media_app.errorhandler(400)
+    def bad_request(error):
+        return jsonify({"error": "Bad Request", "message": error.description}), 400
+    @media_app.errorhandler(401)
+    def unauthorized(error):
+        return jsonify({"error": "Unauthorized", "message": "Authentication required."}), 401
+    @media_app.errorhandler(403)
+    def forbidden(error):
+        return jsonify({"error": "Forbidden", "message": "You do not have permission."}), 403
+    @media_app.errorhandler(404)
+    def not_found(error):
+        return jsonify({"error": "Not Found", "message": "Resource not found."}), 404
+    @media_app.errorhandler(405)
+    def method_not_allowed(error):
+        return jsonify({"error": "Method Not Allowed", "message": error.description}), 405
+    @media_app.errorhandler(500)
+    def internal_server_error(error):
+        return jsonify({"error": "Internal Server Error", "message": "An unexpected error occurred."}), 500
+    if DEBUG:
+        print("Custom error handlers registered")
+
     from media_info_api.extensions import media_db, migrate
     media_db.init_app(media_app)
     if DEBUG:
@@ -100,8 +121,9 @@ def create_app(config_name="development"):
             }
         }
     }
-    print("Initializing Swagger Docs...")
     swagger = Swagger(media_app, template=swagger_data)  # noqa: F841
+    if DEBUG:
+        print("Swagger docs registered")
 
     @media_app.teardown_appcontext
     def close_db(exception: Exception):
