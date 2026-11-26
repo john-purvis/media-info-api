@@ -61,22 +61,22 @@ def create_app(config_name="development"):
 
     @media_app.errorhandler(400)
     def bad_request(error):
-        return jsonify({"error": "Bad Request", "message": error.description}), 400
+        return jsonify({"error": error.description}), 400
     @media_app.errorhandler(401)
     def unauthorized(error):
-        return jsonify({"error": "Unauthorized", "message": "Authentication required."}), 401
+        return jsonify({"error": "Authentication required"}), 401
     @media_app.errorhandler(403)
     def forbidden(error):
-        return jsonify({"error": "Forbidden", "message": "You do not have permission."}), 403
+        return jsonify({"error": "Access denied"}), 403
     @media_app.errorhandler(404)
     def not_found(error):
-        return jsonify({"error": "Not Found", "message": "Resource not found."}), 404
+        return jsonify({"error": "Resource not found"}), 404
     @media_app.errorhandler(405)
     def method_not_allowed(error):
-        return jsonify({"error": "Method Not Allowed", "message": error.description}), 405
+        return jsonify({"error": error.description}), 405
     @media_app.errorhandler(500)
     def internal_server_error(error):
-        return jsonify({"error": "Internal Server Error", "message": "An unexpected error occurred."}), 500
+        return jsonify({"error": "An unexpected error occurred"}), 500
     if DEBUG:
         print("Custom error handlers registered")
 
