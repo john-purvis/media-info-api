@@ -253,29 +253,42 @@ def s_media_get(current_user_id_str, current_user_is_admin, media_id):
 
     return True, media_to_dict(media)
 
-def s_media_list(current_user_id_str, current_user_is_admin):
+def s_media_list(current_user_id_str, current_user_is_admin, page = 1, per_page = 10):
     current_user_id = int(current_user_id_str)
 
-    if current_user_is_admin:
-        # show all media if admin
-        media = (
-            Media.query
-            .order_by(Media.id)
-            .all()
-        )
-    else:
-        # filter media by user id if not admin
-        media = (
-            Media.query
-            .filter(Media.user_id == current_user_id)
-            .order_by(Media.id)
-            .all()
-        )
-        if not media:
-            # no media returned, return empty list
-            return True, []
+    # 1. Start with the base query
+    query = Media.query
 
-    return True, [media_to_dict(m) for m in media]
+    # 2. Apply filter only if the user is not an admin
+    if not current_user_is_admin:
+        query = query.filter(Media.user_id == current_user_id)
+
+    # 3. Order and paginate instead of calling .all()
+    pagination = query.order_by(Media.id).paginate(
+        page=page,
+        per_page=per_page,
+        error_out=False  # Prevents 404 if page > total pages; returns empty items instead
+    )
+
+    # 4. Serialize only the current page's items
+    media = [media_to_dict(m) for m in pagination.items]
+
+    # 5. Return items + forward/backward pagination metadata
+    result = {
+        "media": media,
+        "page": pagination.page,
+        "per_page": pagination.per_page,
+        "total": pagination.total,   # alias of total_items
+        "pages": pagination.pages,   # alias of total_pages
+        "total_items": pagination.total,
+        "total_pages": pagination.pages,
+        "has_prev": pagination.has_prev,
+        "prev_num": pagination.prev_num,
+        "has_next": pagination.has_next,
+        "next_num": pagination.next_num,
+    }
+
+    return True, result
 
 def s_media_update(current_user_id_str, current_user_is_admin, media_id, data):
     current_user_id = int(current_user_id_str)

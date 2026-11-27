@@ -7,6 +7,7 @@ from flask import (
     render_template,
     request,
     send_from_directory,
+    url_for,
 )
 from werkzeug.security import generate_password_hash
 
@@ -38,6 +39,7 @@ root_bp = Blueprint("root", __name__)
 users_bp = Blueprint("users", __name__)
 
 # media routes (register with "media" prefix) ==================================
+
 
 @media_bp.route("", methods=["POST"])
 @token_required
@@ -87,8 +89,8 @@ def media_create():
         description: title already taken
     """
     # get custom claims from "g"
-    current_user_id_str   = g.current_user["sub"]
-    current_username      = g.current_user["username"]  # noqa: F841
+    current_user_id_str = g.current_user["sub"]
+    current_username = g.current_user["username"]  # noqa: F841
     current_user_is_admin = g.current_user["is_admin"]  # noqa: F841
 
     data = request.get_json(silent=True) or {}
@@ -96,14 +98,14 @@ def media_create():
     if not data:
         return jsonify({"error": "a JSON body is required"}), 400
     if "user_id" in data:  # noqa: SIM102
-      if data["user_id"] == None or data["user_id"].strip() == "":
-        return jsonify({"error": "user_id is required"}), 400
+        if data["user_id"] == None or data["user_id"].strip() == "":
+            return jsonify({"error": "user_id is required"}), 400
     if "type" in data:  # noqa: SIM102
-      if data["type"] == None or data["type"].strip() == "":
-        return jsonify({"error": "type is required"}), 400
+        if data["type"] == None or data["type"].strip() == "":
+            return jsonify({"error": "type is required"}), 400
     if "title" in data:  # noqa: SIM102
-      if data["title"] == None or data["title"].strip() == "":
-        return jsonify({"error": "title is required"}), 400
+        if data["title"] == None or data["title"].strip() == "":
+            return jsonify({"error": "title is required"}), 400
 
     # replace any user_id with the current user id
     data["user_id"] = int(current_user_id_str)
@@ -115,11 +117,16 @@ def media_create():
         if "already exists" in data:
             return jsonify({"error": f"{data}"}), 409
         if "database is locked" in data:
-            return jsonify({"error": "the database is locked - contact the administrator"}), 500
+            return jsonify(
+                {"error": "the database is locked - contact the administrator"}
+            ), 500
 
-        return jsonify({"error": "an error has occurred - contact the administrator"}), 500
+        return jsonify(
+            {"error": "an error has occurred - contact the administrator"}
+        ), 500
 
     return jsonify(data), 201
+
 
 @media_bp.get("/<int:media_id>")
 @token_required
@@ -150,10 +157,6 @@ def r_get_media(media_id):
             properties:
                 id:
                     type: integer
-                catalog_id:
-                    type: integer
-                user_id:
-                    type: integer
                 type:
                     type: string
                 title:
@@ -174,10 +177,14 @@ def r_get_media(media_id):
                     type: string
                 wiki_id:
                     type: string
+                catalog_id:
+                    type: integer
+                user_id:
+                    type: integer
     """
     # get custom claims from "g"
-    current_user_id_str   = g.current_user["sub"]
-    current_username      = g.current_user["username"]  # noqa: F841
+    current_user_id_str = g.current_user["sub"]
+    current_username = g.current_user["username"]  # noqa: F841
     current_user_is_admin = g.current_user["is_admin"]
 
     success, data = s_media_get(current_user_id_str, current_user_is_admin, media_id)
@@ -185,6 +192,7 @@ def r_get_media(media_id):
         return jsonify({"error": f"{data}"}), 404
 
     return jsonify(data), 200
+
 
 @media_bp.get("")
 @token_required
@@ -196,6 +204,19 @@ def r_media_list():
       - Media
     security:
       - AuthKey: []  # <--- Tells Swagger to fetch the token from the lock box
+    parameters:
+      - name: page
+        in: query
+        type: integer
+        required: false
+        default: 1
+        description: The page number to retrieve
+      - name: per_page
+        in: query
+        type: integer
+        required: false
+        default: 10
+        description: Number of items per page
     responses:
       401:
         description: unauthorized (not logged in)
@@ -211,10 +232,6 @@ def r_media_list():
                 type: object
                 properties:
                     id:
-                        type: integer
-                    catalog_id:
-                        type: integer
-                    user_id:
                         type: integer
                     type:
                         type: string
@@ -236,13 +253,47 @@ def r_media_list():
                         type: string
                     wiki_id:
                         type: string
+                    catalog_id:
+                        type: integer
+                    user_id:
+                        type: integer
     """
+    MAX_PER_PAGE = 400
+
     # get custom claims from "g"
-    current_user_id_str   = g.current_user["sub"]
-    current_username      = g.current_user["username"]  # noqa: F841
+    current_user_id_str = g.current_user["sub"]
+    current_username = g.current_user["username"]  # noqa: F841
     current_user_is_admin = g.current_user["is_admin"]
-    success, media = s_media_list(current_user_id_str, current_user_is_admin)  # noqa: RUF059
-    return jsonify(media), 200
+
+    page = request.args.get("page", 1, type=int)
+    per_page = request.args.get("per_page", 10, type=int)
+
+    if not isinstance(page, int) or page == None or page < 1:
+        return jsonify({"error": f"page must be a number between 1 and {MAX_PER_PAGE}"}), 400
+    if not isinstance(page, int) or (per_page < 1 or per_page > MAX_PER_PAGE):
+        return jsonify(
+            {"error": f"per_page must be a number between 1 and {MAX_PER_PAGE}"}
+        ), 400
+
+    success, data = s_media_list(
+        current_user_id_str, current_user_is_admin, page, per_page
+    )
+
+    if success:
+        # Attach ready-to-use forward/backward URLs
+        data["prev_url"] = (
+            url_for(request.endpoint, page=data["prev_num"], per_page=per_page)
+            if data["has_prev"]
+            else None
+        )
+        data["next_url"] = (
+            url_for(request.endpoint, page=data["next_num"], per_page=per_page)
+            if data["has_next"]
+            else None
+        )
+
+    return jsonify(data), 200
+
 
 @media_bp.route("/<int:media_id>", methods=["PATCH"])
 @token_required
@@ -327,24 +378,26 @@ def r_media_update(media_id):
     # UPDATE and DELETE would deduce that the ID existed. No 403 required here.
 
     # get custom claims from "g"
-    current_user_id_str   = g.current_user["sub"]
-    current_username      = g.current_user["username"]  # noqa: F841
+    current_user_id_str = g.current_user["sub"]
+    current_username = g.current_user["username"]  # noqa: F841
     current_user_is_admin = g.current_user["is_admin"]
 
     data = request.get_json(silent=True)
     if not data:
         return jsonify({"error": "a JSON body is required"}), 400
     if "user_id" in data:  # noqa: SIM102
-      if data["user_id"] == None or data["user_id"].strip() == "":
-        return jsonify({"error": "user_id is required"}), 400
+        if data["user_id"] == None or data["user_id"].strip() == "":
+            return jsonify({"error": "user_id is required"}), 400
     if "type" in data:  # noqa: SIM102
-      if data["type"] == None or data["type"].strip() == "":
-        return jsonify({"error": "type is required"}), 400
+        if data["type"] == None or data["type"].strip() == "":
+            return jsonify({"error": "type is required"}), 400
     if "title" in data:  # noqa: SIM102
-      if data["title"] == None or data["title"].strip() == "":
-        return jsonify({"error": "title is required"}), 400
+        if data["title"] == None or data["title"].strip() == "":
+            return jsonify({"error": "title is required"}), 400
 
-    success, data = s_media_update(current_user_id_str, current_user_is_admin, media_id, data)
+    success, data = s_media_update(
+        current_user_id_str, current_user_is_admin, media_id, data
+    )
 
     if not success:
         if "nothing to update" in data:
@@ -356,11 +409,16 @@ def r_media_update(media_id):
         if "already exists" in data:
             return jsonify({"error": f"{data}"}), 409
         if "database is locked" in data:
-            return jsonify({"error": "the database is locked - contact the administrator"}), 500
+            return jsonify(
+                {"error": "the database is locked - contact the administrator"}
+            ), 500
 
-        return jsonify({"error": "an error has occurred - contact the administrator"}), 500
+        return jsonify(
+            {"error": "an error has occurred - contact the administrator"}
+        ), 500
 
     return jsonify(data), 200
+
 
 @media_bp.route("/<int:media_id>", methods=["DELETE"])
 @token_required
@@ -390,24 +448,31 @@ def r_media_delete(media_id):
     # UPDATE and DELETE would deduce that the ID existed. No 403 required here.
 
     # get custom claims from "g"
-    current_user_id_str   = g.current_user["sub"]
-    current_username      = g.current_user["username"]  # noqa: F841
+    current_user_id_str = g.current_user["sub"]
+    current_username = g.current_user["username"]  # noqa: F841
     current_user_is_admin = g.current_user["is_admin"]
 
     success, data = s_media_delete(current_user_id_str, current_user_is_admin, media_id)
 
     if not success:
-      if "media not found" in data:
-          return jsonify({"error": "media not found"}), 404
-      if "database is locked" in data:
-          return jsonify({"error": "the database is locked - contact the administrator"}), 500
+        if "media not found" in data:
+            return jsonify({"error": "media not found"}), 404
+        if "database is locked" in data:
+            return jsonify(
+                {"error": "the database is locked - contact the administrator"}
+            ), 500
 
-      return jsonify({"error": "an error has occurred - contact the administrator"}), 500
+        return jsonify(
+            {"error": "an error has occurred - contact the administrator"}
+        ), 500
 
     return "", 204
-#endregion
 
-#region user routes (register with no prefix) ==================================
+
+# endregion
+
+# region user routes (register with no prefix) ==================================
+
 
 @root_bp.route("/register", methods=["POST"])
 @token_accepted
@@ -443,13 +508,13 @@ def r_user_create():
         description: Username already taken
     """
     # get custom claims from "g"
-    current_user_id_str   = g.current_user["sub"]
-    current_username      = g.current_user["username"]  # noqa: F841
+    current_user_id_str = g.current_user["sub"]
+    current_username = g.current_user["username"]  # noqa: F841
     current_user_is_admin = g.current_user["is_admin"]
 
     data = request.get_json(silent=True) or {}
 
-    if ("password_hash" in data):
+    if "password_hash" in data:
         # confuse and/or foil attacker
         # do not complain or error
         # just make like the "pasword_hash" was passed as "password"
@@ -472,14 +537,17 @@ def r_user_create():
             return jsonify({"error": f"{data}"}), 400
         if "already exists" in data:
             return jsonify({"error": f"{data}"}), 409
-        return jsonify({"error": "an error has occurred - contact the administrator"}), 500
+        return jsonify(
+            {"error": "an error has occurred - contact the administrator"}
+        ), 500
 
     if current_user_is_admin is not True:
-      if "password_hash" in data:
-          data.pop("password_hash")
-      if "is_admin" in data:
-          data.pop("is_admin")
+        if "password_hash" in data:
+            data.pop("password_hash")
+        if "is_admin" in data:
+            data.pop("is_admin")
     return jsonify(data), 201
+
 
 @root_bp.route("/login", methods=["POST"])
 def r_user_login():
@@ -508,17 +576,15 @@ def r_user_login():
         description: Invalid username or password
     """
     data = request.get_json()
-    if not data or 'username' not in data or 'password' not in data:
+    if not data or "username" not in data or "password" not in data:
         return jsonify({"error": "missing credentials"}), 400
 
-    success, data = s_user_login(data['username'], data['password'])
+    success, data = s_user_login(data["username"], data["password"])
 
     if not success:
-      return jsonify({"error": "login failed"}), 401
+        return jsonify({"error": "login failed"}), 401
 
-    if data["is_admin"] == 1 or \
-        data["is_admin"] == True or \
-        data["is_admin"] == "True":
+    if data["is_admin"] == 1 or data["is_admin"] == True or data["is_admin"] == "True":
         data["is_admin"] = True
     else:
         data["is_admin"] = False
@@ -527,9 +593,15 @@ def r_user_login():
     data.pop("password_hash")
 
     # Generate token with (user id) identity and extra attributes
-    token = create_access_token(user_id=data["id"], username=data["username"], role=data["role"], is_admin=data["is_admin"])
+    token = create_access_token(
+        user_id=data["id"],
+        username=data["username"],
+        role=data["role"],
+        is_admin=data["is_admin"],
+    )
 
     return jsonify({"access_token": token}), 200
+
 
 @root_bp.route("/logout", methods=["POST"])
 @token_required
@@ -551,16 +623,18 @@ def r_user_logout():
         description: Unauthorized (no valid token provided)
     """
     # get custom claims from "g"
-    current_user_id_str   = g.current_user["sub"]  # noqa: F841
-    current_username      = g.current_user["username"]  # noqa: F841
+    current_user_id_str = g.current_user["sub"]  # noqa: F841
+    current_username = g.current_user["username"]  # noqa: F841
     current_user_is_admin = g.current_user["is_admin"]  # noqa: F841
 
     revoke_access_token()
     return jsonify({"message": "user logged out"}), 200
 
-#endregion
 
-#region user routes (register with "users" prefix) =============================
+# endregion
+
+# region user routes (register with "users" prefix) =============================
+
 
 @users_bp.route("/me", methods=["GET"])
 @token_required
@@ -590,11 +664,13 @@ def me_get():
                   type: str
     """
     # get custom claims from "g"
-    current_user_id_str   = g.current_user["sub"]
-    current_username      = g.current_user["username"]  # noqa: F841
+    current_user_id_str = g.current_user["sub"]
+    current_username = g.current_user["username"]  # noqa: F841
     current_user_is_admin = g.current_user["is_admin"]
 
-    success, data = s_user_get(current_user_id_str, current_user_is_admin, current_user_id_str)
+    success, data = s_user_get(
+        current_user_id_str, current_user_is_admin, current_user_id_str
+    )
     if not success:
         if "not found" in data:
             return jsonify(data), 404
@@ -610,6 +686,7 @@ def me_get():
     if "is_admin" in data:
         data.pop("is_admin")
     return jsonify(data), 200
+
 
 @users_bp.route("/me", methods=["PATCH"])
 @token_required
@@ -662,8 +739,8 @@ def me_update():
         description: A user with that email already exists
     """
     # get custom claims from "g"
-    current_user_id_str   = g.current_user["sub"]
-    current_username      = g.current_user["username"]  # noqa: F841
+    current_user_id_str = g.current_user["sub"]
+    current_username = g.current_user["username"]  # noqa: F841
     current_user_is_admin = g.current_user["is_admin"]
 
     data = request.get_json(silent=True)
@@ -673,7 +750,9 @@ def me_update():
     allowed = {"email", "phone"}
     allowed_ordered = {key: data[key] for key in allowed if key in data}
 
-    success, data = s_user_update(current_user_id_str, current_user_is_admin, current_user_id_str, allowed_ordered)
+    success, data = s_user_update(
+        current_user_id_str, current_user_is_admin, current_user_id_str, allowed_ordered
+    )
 
     if not success:
         if "nothing to update" in data:
@@ -686,7 +765,9 @@ def me_update():
             return jsonify({"error": f"{data}"}), 404
         if "already exists" in data:
             return jsonify({"error": f"{data}"}), 409
-        return jsonify({"error": "an error has occurred - contact the administrator"}), 500
+        return jsonify(
+            {"error": "an error has occurred - contact the administrator"}
+        ), 500
 
     if "id" in data:
         data.pop("id")
@@ -697,6 +778,7 @@ def me_update():
     if "is_admin" in data:
         data.pop("is_admin")
     return jsonify(data), 200
+
 
 @users_bp.route("/<int:user_id>", methods=["GET"])
 @token_required
@@ -742,8 +824,8 @@ def r_user_get(user_id):
                   type: boolean
     """
     # get custom claims from "g"
-    current_user_id_str   = g.current_user["sub"]
-    current_username      = g.current_user["username"]  # noqa: F841
+    current_user_id_str = g.current_user["sub"]
+    current_username = g.current_user["username"]  # noqa: F841
     current_user_is_admin = g.current_user["is_admin"]
 
     success, data = s_user_get(current_user_id_str, current_user_is_admin, user_id)
@@ -754,11 +836,12 @@ def r_user_get(user_id):
             return jsonify(data), 500
 
     if current_user_is_admin is not True:
-      if "password_hash" in data:
-          data.pop("password_hash")
-      if "is_admin" in data:
-          data.pop("is_admin")
+        if "password_hash" in data:
+            data.pop("password_hash")
+        if "is_admin" in data:
+            data.pop("is_admin")
     return jsonify(data), 200
+
 
 @users_bp.route("", methods=["GET"])
 @token_required
@@ -799,8 +882,8 @@ def r_user_list():
                   type: boolean
     """
     # get custom claims from "g"
-    current_user_id_str   = g.current_user["sub"]
-    current_username      = g.current_user["username"]  # noqa: F841
+    current_user_id_str = g.current_user["sub"]
+    current_username = g.current_user["username"]  # noqa: F841
     current_user_is_admin = g.current_user["is_admin"]
 
     success, data = s_user_list(current_user_id_str, current_user_is_admin)  # noqa: RUF059
@@ -808,12 +891,13 @@ def r_user_list():
     # strip out any sensitive fields if not admin
     # before sending it back
     if current_user_is_admin is not True:
-      if "password_hash" in data:
-          data = [d.pop("password_hash") for d in data]
-      if "is_admin" in data:
-          data = [d.pop("is_admin") for d in data]
+        if "password_hash" in data:
+            data = [d.pop("password_hash") for d in data]
+        if "is_admin" in data:
+            data = [d.pop("is_admin") for d in data]
 
     return jsonify(data), 200
+
 
 @users_bp.route("/<int:user_id>", methods=["PATCH"])
 @token_required
@@ -871,8 +955,8 @@ def r_user_update(user_id):
         description: A user with that email already exists
     """
     # get custom claims from "g"
-    current_user_id_str   = g.current_user["sub"]
-    current_username      = g.current_user["username"]  # noqa: F841
+    current_user_id_str = g.current_user["sub"]
+    current_username = g.current_user["username"]  # noqa: F841
     current_user_is_admin = g.current_user["is_admin"]
 
     data = request.get_json(silent=True)
@@ -880,7 +964,7 @@ def r_user_update(user_id):
         return jsonify({"error": "a JSON body is required"}), 400
 
     if not user_id:
-      return jsonify({"error": "nothing to update"}), 400
+        return jsonify({"error": "nothing to update"}), 400
 
     if "password" in data and data["password"].strip() == "":
         # but password in blank
@@ -899,16 +983,20 @@ def r_user_update(user_id):
             # only update is_admin if current user is admin
             # do not report the error, just silently fail to update
             # so as not to give a potential attacker more information
-            if data["is_admin"] == 1 or \
-                data["is_admin"] == True or \
-                data["is_admin"] == "True":
+            if (
+                data["is_admin"] == 1
+                or data["is_admin"] == True
+                or data["is_admin"] == "True"
+            ):
                 data["is_admin"] = True
             else:
                 data["is_admin"] = False
         else:
             data.pop("is_admin")
 
-    success, data = s_user_update(current_user_id_str, current_user_is_admin, user_id, data)
+    success, data = s_user_update(
+        current_user_id_str, current_user_is_admin, user_id, data
+    )
 
     if not success:
         if "nothing to update" in data:
@@ -921,16 +1009,19 @@ def r_user_update(user_id):
             return jsonify({"error": f"{data}"}), 404
         if "already exists" in data:
             return jsonify({"error": f"{data}"}), 409
-        return jsonify({"error": "an error has occurred - contact the administrator"}), 500
+        return jsonify(
+            {"error": "an error has occurred - contact the administrator"}
+        ), 500
 
     # strip out any sensitive fields if not admin
     # before sending it back
     if current_user_is_admin is not True:
-      if "password_hash" in data:
-          data.pop("password_hash")
-      if "is_admin" in data:
-          data.pop("is_admin")
+        if "password_hash" in data:
+            data.pop("password_hash")
+        if "is_admin" in data:
+            data.pop("is_admin")
     return jsonify(data), 200
+
 
 @users_bp.route("/<int:user_id>", methods=["DELETE"])
 @token_required
@@ -959,26 +1050,28 @@ def r_user_delete(user_id):
         description: User not found
     """
     # get custom claims from "g"
-    current_user_id_str   = g.current_user["sub"]
-    current_username      = g.current_user["username"]  # noqa: F841
+    current_user_id_str = g.current_user["sub"]
+    current_username = g.current_user["username"]  # noqa: F841
     current_user_is_admin = g.current_user["is_admin"]
 
     if not user_id:
-      return jsonify({"error": "nothing to delete"}), 400
+        return jsonify({"error": "nothing to delete"}), 400
 
     success, data = s_user_delete(current_user_id_str, current_user_is_admin, user_id)
 
     if not success:
-      if "not found" in data:
-          return jsonify({"error": f"{data}"}), 404
-      if "access denied" in data:
-          return jsonify({"error": f"{data}"}), 403
+        if "not found" in data:
+            return jsonify({"error": f"{data}"}), 404
+        if "access denied" in data:
+            return jsonify({"error": f"{data}"}), 403
 
     return "", 204
 
-#endregion
 
-#region: root routes (register with no prefix) =================================
+# endregion
+
+# region: root routes (register with no prefix) =================================
+
 
 @root_bp.route("/", methods=["GET"])
 def index():
@@ -998,15 +1091,18 @@ def index():
     """
     return send_from_directory(root_bp.root_path, "index.html")
 
+
 # Serves the admin visual UI page
 @root_bp.route("/admin/dashboard", methods=["GET"])
 def admin_dashboard_page():
     return render_template("admin_dashboard.html")
 
+
 # Serves the admin visual UI page
 @root_bp.route("/dashboard", methods=["GET"])
 def dashboard_page():
     return render_template("dashboard.html")
+
 
 # Protected admin API endpoint called by the dashboard's JavaScript
 @root_bp.route("/api/admin/stats", methods=["GET"])
@@ -1014,14 +1110,17 @@ def dashboard_page():
 @admin_required
 def admin_stats_api():
     return (
-        jsonify({
-            "username": g.current_user["username"],
-            "admin_id": g.current_user["sub"],
-            "jti": g.current_user["jti"],
-            "revoked_tokens_count": len(get_revoked_tokens()),
-        }),
+        jsonify(
+            {
+                "username": g.current_user["username"],
+                "admin_id": g.current_user["sub"],
+                "jti": g.current_user["jti"],
+                "revoked_tokens_count": len(get_revoked_tokens()),
+            }
+        ),
         200,
     )
+
 
 @root_bp.route("/health", methods=["GET"])
 def r_health_check():
@@ -1040,4 +1139,5 @@ def r_health_check():
 
     return jsonify({"status": f"{data}"}), 200
 
-#endregion
+
+# endregion
