@@ -6,7 +6,7 @@
     <title>Admin Command Center</title>
     <!-- <script src="https://tailwindcss.com"></script> -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-
+    <link rel="stylesheet" href="/templates/style.css">
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased">
 
@@ -103,7 +103,7 @@
             }
 
             try {
-                const res = await fetch("/api/admin/stats", {
+                const res = await fetch("/admin/stats", {
                     headers: { "Authorization": `Bearer ${token}` }
                 });
                 const data = await res.json();

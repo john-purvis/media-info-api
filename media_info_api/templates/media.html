@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Media Vault &bull; Page {{ data.page }}</title>
+    <!-- <script src="https://tailwindcss.com"></script> -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="/templates/style.css">
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans antialiased">
+
+    <!-- Top Header -->
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <span class="text-2xl">🎬</span>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight text-white">Media Catalog</h1>
+                    <p class="text-xs text-slate-400">
+                        Showing <span class="text-slate-200 font-medium">{{ data.media|length }}</span> of
+                        <span class="text-slate-200 font-medium">{{ data.total }}</span> titles
+                    </p>
+                </div>
+            </div>
+
+            <!-- Per-Page Selector -->
+            <form method="get" class="flex items-center gap-2 text-sm">
+                <label for="per_page" class="text-slate-400">Per page:</label>
+                <select name="per_page" id="per_page" onchange="this.form.submit()"
+                        class="bg-slate-800 border border-slate-700 text-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        {% for count in [10, 20, 50, 100] %}
+                        <!-- {% for count in [12, 24, 48, 96] %} -->
+                        <option value="{{ count }}" {% if data.per_page == count %}selected{% endif %}>{{ count }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+        </div>
+    </header>
+
+    <!-- Main Content Grid -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {% if data.media %}
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {% for item in data.media %}
+            {# Support both nested item.catalog or flattened keys from media_to_dict #}
+            {% set cat = item.catalog if item.catalog is defined else item %}
+
+            <article class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg hover:border-slate-700 transition flex flex-col">
+
+                <!-- Poster / Header Banner -->
+                <div class="relative aspect-[2/3] bg-slate-800 overflow-hidden group">
+                    {% if cat.file_media_img %}
+                        <img src="{{ url_for('static', filename=(cat.path_media_rel ~ '/' ~ cat.file_media_img).lstrip('/')) }}"
+                             alt="{{ item.title }}"
+                             class="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                    {% endif %}
+
+                    <!-- Fallback Poster Placeholder -->
+                    <div class="{% if cat.file_media_img %}hidden{% else %}flex{% endif %} w-full h-full flex-col items-center justify-center p-6 text-center bg-gradient-to-br from-slate-800 to-slate-900">
+                        <span class="text-4xl mb-2 opacity-50">🎞️</span>
+                        <span class="text-sm font-semibold text-slate-300 line-clamp-3">{{ item.title }}</span>
+                        {% if item.year %}
+                            <span class="text-xs text-slate-500 mt-1">({{ item.year }})</span>
+                        {% endif %}
+                    </div>
+
+                    <!-- Top Left: Media Type & Certificate -->
+                    <div class="absolute top-2.5 left-2.5 flex flex-wrap gap-1.5">
+                        <span class="px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider rounded bg-slate-950/80 text-indigo-300 border border-indigo-500/30 backdrop-blur-sm">
+                            {{ item.type.replace('_', ' ') }}
+                        </span>
+                        {% if item.certificate %}
+                        <span class="px-2 py-0.5 text-[11px] font-bold rounded bg-slate-950/80 text-slate-200 border border-slate-700 backdrop-blur-sm">
+                            {{ item.certificate }}
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    <!-- Top Right: Catalog Storage Location Badge -->
+                    {% if cat.location %}
+                    {% set loc = cat.location.lower() %}
+                    <div class="absolute top-2.5 right-2.5">
+                        <span class="px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider rounded-full backdrop-blur-sm border
+                            {% if loc == 'local' %} bg-emerald-950/85 text-emerald-300 border-emerald-500/40
+                            {% elif loc == 'archive' %} bg-amber-950/85 text-amber-300 border-amber-500/40
+                            {% elif loc == 'cloud' %} bg-sky-950/85 text-sky-300 border-sky-500/40
+                            {% else %} bg-slate-950/85 text-slate-300 border-slate-600 {% endif %}">
+                            {{ cat.location }}
+                        </span>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Card Body -->
+                <div class="p-4 flex-grow flex flex-col justify-between space-y-4">
+                    <div>
+                        <!-- Title & Year -->
+                        <div class="flex items-baseline justify-between gap-2">
+                            <h2 class="text-base font-bold text-white leading-snug line-clamp-2" title="{{ item.title }}">
+                                {{ item.title }}
+                            </h2>
+                            {% if item.year %}
+                            <span class="text-xs font-mono text-slate-400 shrink-0">{{ item.year }}</span>
+                            {% endif %}
+                        </div>
+
+                        <!-- Duration & Genres -->
+                        <div class="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-400">
+                            {% if item.duration %}
+                                {% set mins = (item.duration // 60) %}
+                                <span>{{ mins // 60 }}h {{ mins % 60 }}m</span>
+                                <span>&bull;</span>
+                            {% endif %}
+                            {% if item.genres %}
+                                <span class="text-slate-300 truncate">{{ item.genres }}</span>
+                            {% endif %}
+                        </div>
+
+                        <!-- Plot Description -->
+                        {% if item.description %}
+                        <p class="mt-2.5 text-xs text-slate-400 line-clamp-3 leading-relaxed">
+                            {{ item.description }}
+                        </p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Catalog File / Disc Label & External IDs -->
+                    <div class="pt-3 border-t border-slate-800/80 space-y-2.5 text-xs">
+                        {% if cat.label or cat.file_media %}
+                        <div class="bg-slate-950/70 rounded-lg p-2 font-mono text-[11px] text-slate-400 space-y-1">
+                            {% if cat.label %}
+                            <div class="flex items-center gap-1.5 text-slate-300">
+                                <span class="text-slate-500">VOL/DISC:</span>
+                                <span class="truncate font-semibold">{{ cat.label }}</span>
+                            </div>
+                            {% endif %}
+                            {% if cat.file_media %}
+                            <div class="truncate text-slate-400" title="{{ cat.file_media }}">
+                                {{ cat.file_media }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+
+                        <!-- External Metadata Links -->
+                        <div class="flex items-center justify-between pt-1">
+                            <div class="flex items-center gap-2">
+                                {% if item.imdb_id %}
+                                <a href="https://imdb.com{{ item.imdb_id }}/" target="_blank" rel="noopener"
+                                   class="px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 font-semibold transition">
+                                    IMDb
+                                </a>
+                                {% endif %}
+                                {% if item.tmdb_id %}
+                                <a href="https://themoviedb.org{{ 'tv' if 'tv' in item.type else 'movie' }}/{{ item.tmdb_id }}" target="_blank" rel="noopener"
+                                   class="px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20 font-semibold transition">
+                                    TMDB
+                                </a>
+                                {% endif %}
+                                {% if item.wiki_id %}
+                                <a href="https://wikipedia.org{{ item.wiki_id }}" target="_blank" rel="noopener"
+                                   class="px-2 py-0.5 rounded bg-slate-700/40 text-slate-300 hover:bg-slate-700/70 font-semibold transition">
+                                    Wiki
+                                </a>
+                                {% endif %}
+                            </div>
+                            <span class="text-[11px] text-slate-600 font-mono">#{{ item.id }}</span>
+                        </div>
+                    </div>
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+
+        {% else %}
+        <div class="text-center py-20">
+            <p class="text-3xl mb-2">📭</p>
+            <h3 class="text-lg font-semibold text-slate-200">No media found</h3>
+            <p class="text-sm text-slate-400 mt-1">There are no catalog entries on this page.</p>
+        </div>
+        {% endif %}
+    </main>
+
+    <!-- Forward & Backward Pagination Footer -->
+    {% if data.pages > 1 %}
+    <footer class="border-t border-slate-800 bg-slate-900/90 backdrop-blur sticky bottom-0 z-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+
+            {% if data.has_prev and data.prev_url %}
+                <a href="{{ data.prev_url }}"
+                   class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-slate-800 text-white hover:bg-indigo-600 border border-slate-700 hover:border-indigo-500 transition">
+                    <span>&larr;</span> Previous
+                </a>
+            {% else %}
+                <span class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-slate-900 text-slate-600 border border-slate-800 cursor-not-allowed">
+                    <span>&larr;</span> Previous
+                </span>
+            {% endif %}
+
+            <div class="text-sm text-slate-400">
+                Page <span class="font-semibold text-white">{{ data.page }}</span> of
+                <span class="font-semibold text-white">{{ data.pages }}</span>
+            </div>
+
+            {% if data.has_next and data.next_url %}
+                <a href="{{ data.next_url }}"
+                   class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-slate-800 text-white hover:bg-indigo-600 border border-slate-700 hover:border-indigo-500 transition">
+                    Next <span>&rarr;</span>
+                </a>
+            {% else %}
+                <span class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-slate-900 text-slate-600 border border-slate-800 cursor-not-allowed">
+                    Next <span>&rarr;</span>
+                </span>
+            {% endif %}
+
+        </div>
+    </footer>
+    {% endif %}
+
+</body>
+</html>

@@ -784,3 +784,211 @@ $ curl -X GET "http://127.0.0.1:5000/media?page=<last_page+1>&per_page=5" -H "ac
 
 
 ================================================================================================
+
+{
+  "type": "movie",
+  "title": "Sling Blade",
+  "year": "1996",
+  "duration": 8160,
+  "certificate": "R",
+  "genres": "Drama, Psychological Drama",
+  "description": "Karl Childers, a simple man hospitalized since his childhood murder of his mother and her lover, is released to start a new life in a small town.",
+  "imdb_id": "tt0117666"
+}
+
+1) Core CRUD paths (User A as owner)
+  1.	Create
+      o	POST /<resource> as User A
+      o	Expect: 201 and returned resource with owner = User A
+
+      curl -i -X POST "http://127.0.0.1:5000/media" -H "accept: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwianRpIjoiNzcxNmM4MzItNTE0MC00MGY5LTgzODAtOGVlY2YwMzYxMWI3IiwiaWF0IjoxNzk1ODQzNzQzLCJleHAiOjE3OTU4NTA5NDMsInVzZXJuYW1lIjoiZXJpY2EiLCJyb2xlIjoidXNlciIsImlzX2FkbWluIjpmYWxzZX0.miSFr26ylbvjC5tPEX8-zvwGghxspnsOr7RChjA4f8o" -H "Content-Type: application/json" -d "{ \"type\": \"movie\", \"title\": \"Sling Blade\", \"year\": \"1996\", \"duration\": 8160, \"certificate\": \"R\", \"genres\": \"Drama, Psychological Drama\", \"description\": \"Karl Childers, a simple man hospitalized since his childhood murder of his mother and her lover, is released to start a new life in a small town.\", \"imdb_id\": \"tt0117666\"}"
+      HTTP/1.1 201 CREATED
+      Server: Werkzeug/3.1.9 Python/3.14.8
+      Date: Sat, 28 Nov 2026 06:20:11 GMT
+      Content-Type: application/json
+      Content-Length: 373
+      Connection: close
+
+      {"id":53,"type":"movie","title":"Sling Blade","year":1996,"duration":8160,"certificate":"R","genres":"Drama, Psychological Drama","description":"Karl Childers, a simple man hospitalized since his childhood murder of his mother and her lover, is released to start a new life in a small town.","imdb_id":"tt0117666","tmdb_id":null,"wiki_id":null,"catalog_id":53,"user_id":2}
+
+
+  2.	Read (existing)
+      o	GET /<resource>/:id for the ID you just created, as User A
+      o	Expect: 200 with correct data
+
+      curl -i -X GET "http://127.0.0.1:5000/media/53" -H "accept: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwianRpIjoiNzcxNmM4MzItNTE0MC00MGY5LTgzODAtOGVlY2YwMzYxMWI3IiwiaWF0IjoxNzk1ODQzNzQzLCJleHAiOjE3OTU4NTA5NDMsInVzZXJuYW1lIjoiZXJpY2EiLCJyb2xlIjoidXNlciIsImlzX2FkbWluIjpmYWxzZX0.miSFr26ylbvjC5tPEX8-zvwGghxspnsOr7RChjA4f8o"
+      HTTP/1.1 200 OK
+      Server: Werkzeug/3.1.9 Python/3.14.8
+      Date: Sat, 28 Nov 2026 05:34:12 GMT
+      Content-Type: application/json
+      Content-Length: 373
+      Connection: close
+
+      {"id":53,"type":"movie","title":"Sling Blade","year":1996,"duration":8160,"certificate":"R","genres":"Drama, Psychological Drama","description":"Karl Childers, a simple man hospitalized since his childhood murder of his mother and her lover, is released to start a new life in a small town.","imdb_id":"tt0117666","tmdb_id":null,"wiki_id":null,"catalog_id":53,"user_id":2}
+
+  3.	Update
+      o	PUT/PATCH /<resource>/:id as User A, changing at least one field
+      o	Followed by GET /<resource>/:id
+      o	Expect: 200 with updated data followed by: 200 with data persisted
+
+      curl -i -X PATCH "http://127.0.0.1:5000/media/53" -H "accept: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwianRpIjoiNzcxNmM4MzItNTE0MC00MGY5LTgzODAtOGVlY2YwMzYxMWI3IiwiaWF0IjoxNzk1ODQzNzQzLCJleHAiOjE3OTU4NTA5NDMsInVzZXJuYW1lIjoiZXJpY2EiLCJyb2xlIjoidXNlciIsImlzX2FkbWluIjpmYWxzZX0.miSFr26ylbvjC5tPEX8-zvwGghxspnsOr7RChjA4f8o" -H "Content-Type: application/json" -d "{ \"year\": 1995}"
+      HTTP/1.1 200 OK
+      Server: Werkzeug/3.1.9 Python/3.14.8
+      Date: Sat, 28 Nov 2026 06:49:23 GMT
+      Content-Type: application/json
+      Content-Length: 373
+      Connection: close
+
+      {"id":53,"type":"movie","title":"Sling Blade","year":1995,"duration":8160,"certificate":"R","genres":"Drama, Psychological Drama","description":"Karl Childers, a simple man hospitalized since his childhood murder of his mother and her lover, is released to start a new life in a small town.","imdb_id":"tt0117666","tmdb_id":null,"wiki_id":null,"catalog_id":53,"user_id":2}
+
+      curl -i -X GET "http://127.0.0.1:5000/media/53" -H "accept: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwianRpIjoiNzcxNmM4MzItNTE0MC00MGY5LTgzODAtOGVlY2YwMzYxMWI3IiwiaWF0IjoxNzk1ODQzNzQzLCJleHAiOjE3OTU4NTA5NDMsInVzZXJuYW1lIjoiZXJpY2EiLCJyb2xlIjoidXNlciIsImlzX2FkbWluIjpmYWxzZX0.miSFr26ylbvjC5tPEX8-zvwGghxspnsOr7RChjA4f8o"
+      HTTP/1.1 200 OK
+      Server: Werkzeug/3.1.9 Python/3.14.8
+      Date: Sat, 28 Nov 2026 06:49:36 GMT
+      Content-Type: application/json
+      Content-Length: 373
+      Connection: close
+
+      {"id":53,"type":"movie","title":"Sling Blade","year":1995,"duration":8160,"certificate":"R","genres":"Drama, Psychological Drama","description":"Karl Childers, a simple man hospitalized since his childhood murder of his mother and her lover, is released to start a new life in a small town.","imdb_id":"tt0117666","tmdb_id":null,"wiki_id":null,"catalog_id":53,"user_id":2}
+
+  4.	Delete
+      o	DELETE /<resource>/:id as User A
+      o	Followed by GET /<resource>/:id
+      o	Expect: 204 with no data followed by: 404 and
+
+      curl -i -X DELETE "http://127.0.0.1:5000/media/53" -H "accept: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwianRpIjoiNzcxNmM4MzItNTE0MC00MGY5LTgzODAtOGVlY2YwMzYxMWI3IiwiaWF0IjoxNzk1ODQzNzQzLCJleHAiOjE3OTU4NTA5NDMsInVzZXJuYW1lIjoiZXJpY2EiLCJyb2xlIjoidXNlciIsImlzX2FkbWluIjpmYWxzZX0.miSFr26ylbvjC5tPEX8-zvwGghxspnsOr7RChjA4f8o"
+      HTTP/1.1 204 NO CONTENT
+      Server: Werkzeug/3.1.9 Python/3.14.8
+      Date: Sat, 28 Nov 2026 06:26:55 GMT
+      Content-Type: text/html; charset=utf-8
+      Connection: close
+
+      curl -i -X GET "http://127.0.0.1:5000/media/53" -H "accept: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwianRpIjoiNzcxNmM4MzItNTE0MC00MGY5LTgzODAtOGVlY2YwMzYxMWI3IiwiaWF0IjoxNzk1ODQzNzQzLCJleHAiOjE3OTU4NTA5NDMsInVzZXJuYW1lIjoiZXJpY2EiLCJyb2xlIjoidXNlciIsImlzX2FkbWluIjpmYWxzZX0.miSFr26ylbvjC5tPEX8-zvwGghxspnsOr7RChjA4f8o"
+      HTTP/1.1 404 NOT FOUND
+      Server: Werkzeug/3.1.9 Python/3.14.8
+      Date: Sat, 28 Nov 2026 06:26:59 GMT
+      Content-Type: application/json
+      Content-Length: 28
+      Connection: close
+
+      {"error":"media not found"}
+
+  5.  Invalid Token
+      o	GET /<resource>/:id with invalid auth token
+      o	Expect: 401 and error status/shape
+
+      curl -i -X GET "http://127.0.0.1:5000/media/53" -H "accept: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwianRpIjoiNzcxNmM4MzItNTE0MC00MGY5LTgzODAtOGVlY2YwMzYxMWI3IiwiaWF0IjoxNzk1ODQzNzQzLCJleHAiOjE3OTU4NTA5NDMsInVzZXJuYW1lIjoiZXJpY2EiLCJyb2xlIjoidXNlciIsImlzX2FkbWluIjpmYWxzZX0.miSFr26ylbvjC5tPEX8-"
+      HTTP/1.1 401 UNAUTHORIZED
+      Server: Werkzeug/3.1.9 Python/3.14.8
+      Date: Sat, 28 Nov 2026 06:22:29 GMT
+      Content-Type: application/json
+      Content-Length: 26
+      Connection: close
+
+      {"error":"invalid token"}
+
+  6.  Missing Token
+      o	GET /<resource>/:id with missing auth token
+      o	Expect: 401 and error status/shape
+
+      curl -i -X GET "http://127.0.0.1:5000/media/53" -H "accept: application/json"
+      HTTP/1.1 401 UNAUTHORIZED
+      Server: Werkzeug/3.1.9 Python/3.14.8
+      Date: Sat, 28 Nov 2026 06:22:58 GMT
+      Content-Type: application/json
+      Content-Length: 54
+      Connection: close
+
+      {"error":"missing or malformed authorization header"}
+
+
+2) Ownership + authorization (User B vs User A’s resource)
+   Using the resource owned by User A:
+  1.	As User B:
+    o	GET /<resource>/:id
+    o	Expect: 404 and error status/shape (NOT 403 by design to not leak information)
+    curl -i -X GET "http://127.0.0.1:5000/media/53" -H "accept: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzIiwianRpIjoiNjUwNWEwMWItNDBmYy00MjRjLWJiNWQtMGE4MGQ4YWM3N2M2IiwiaWF0IjoxNzk1ODUyODU5LCJleHAiOjE3OTU4NjAwNTksInVzZXJuYW1lIjoiamVycnkiLCJyb2xlIjoidXNlciIsImlzX2FkbWluIjpmYWxzZX0.uedbfo9LGZywJzMtmpmBbbniuxQvSjjJtWkt4lnW130"
+    HTTP/1.1 404 NOT FOUND
+    Server: Werkzeug/3.1.9 Python/3.14.8
+    Date: Sat, 28 Nov 2026 08:01:47 GMT
+    Content-Type: application/json
+    Content-Length: 28
+    Connection: close
+
+    {"error":"media not found"}
+
+    o	PUT/PATCH /<resource>/:id
+    o	Expect: 404 and error status/shape (NOT 403 by design to not leak information)
+    curl -i -X PATCH "http://127.0.0.1:5000/media/53" -H "accept: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzIiwianRpIjoiNjUwNWEwMWItNDBmYy00MjRjLWJiNWQtMGE4MGQ4YWM3N2M2IiwiaWF0IjoxNzk1ODUyODU5LCJleHAiOjE3OTU4NjAwNTksInVzZXJuYW1lIjoiamVycnkiLCJyb2xlIjoidXNlciIsImlzX2FkbWluIjpmYWxzZX0.uedbfo9LGZywJzMtmpmBbbniuxQvSjjJtWkt4lnW130" -H "Content-Type: application/json" -d "{ \"year\": 1995}"
+    HTTP/1.1 404 NOT FOUND
+    Server: Werkzeug/3.1.9 Python/3.14.8
+    Date: Sat, 28 Nov 2026 08:03:15 GMT
+    Content-Type: application/json
+    Content-Length: 28
+    Connection: close
+
+    {"error":"media not found"}
+
+    o	DELETE /<resource>/:id
+    o	Expect: 404 and error status/shape (NOT 403 by design to not leak information)
+    curl -i -X DELETE "http://127.0.0.1:5000/media/53" -H "accept: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzIiwianRpIjoiNjUwNWEwMWItNDBmYy00MjRjLWJiNWQtMGE4MGQ4YWM3N2M2IiwiaWF0IjoxNzk1ODUyODU5LCJleHAiOjE3OTU4NjAwNTksInVzZXJuYW1lIjoiamVycnkiLCJyb2xlIjoidXNlciIsImlzX2FkbWluIjpmYWxzZX0.uedbfo9LGZywJzMtmpmBbbniuxQvSjjJtWkt4lnW130"
+    HTTP/1.1 404 NOT FOUND
+    Server: Werkzeug/3.1.9 Python/3.14.8
+    Date: Sat, 28 Nov 2026 08:03:47 GMT
+    Content-Type: application/json
+    Content-Length: 28
+    Connection: close
+
+    {"error":"media not found"}
+
+    o	GET /<resource>/:id (where the resource id does not exist)
+    o	Expect: 404 and error status/shape
+    curl -i -X GET "http://127.0.0.1:5000/media/999" -H "accept: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzIiwianRpIjoiNjUwNWEwMWItNDBmYy00MjRjLWJiNWQtMGE4MGQ4YWM3N2M2IiwiaWF0IjoxNzk1ODUyODU5LCJleHAiOjE3OTU4NjAwNTksInVzZXJuYW1lIjoiamVycnkiLCJyb2xlIjoidXNlciIsImlzX2FkbWluIjpmYWxzZX0.uedbfo9LGZywJzMtmpmBbbniuxQvSjjJtWkt4lnW130"
+    HTTP/1.1 404 NOT FOUND
+    Server: Werkzeug/3.1.9 Python/3.14.8
+    Date: Sat, 28 Nov 2026 08:06:32 GMT
+    Content-Type: application/json
+    Content-Length: 28
+    Connection: close
+
+    {"error":"media not found"}
+
+3) Admin-only route
+
+    1.	As Admin user:
+        o	Call the route, show success.
+        curl -i -X GET "http://127.0.0.1:5000/admin/stats" -H "accept: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwianRpIjoiYzQ3NTA4ZjMtZDM3YS00OGE0LWJmZWUtNGNmM2FiYjNhNmIyIiwiaWF0IjoxNzk1ODUzNDM5LCJleHAiOjE3OTU4NjA2MzksInVzZXJuYW1lIjoiYWRtaW4iLCJyb2xlIjoiYWRtaW4iLCJpc19hZG1pbiI6dHJ1ZX0.Ikm9xccg9XFzhILM6MsfzuNOcRMvb_JesokEuWZ7JHI"
+        HTTP/1.1 200 OK
+        Server: Werkzeug/3.1.9 Python/3.14.8
+        Date: Sat, 28 Nov 2026 08:13:34 GMT
+        Content-Type: application/json
+        Content-Length: 106
+        Connection: close
+
+        {"username":"admin","admin_id":"1","jti":"c47508f3-d37a-48a4-bfee-4cf3abb3a6b2","revoked_tokens_count":0}
+
+    2.	As Non-admin (User A or B): User B cannot access User A data
+        o	Call the same route, show failure:
+        curl -i -X GET "http://127.0.0.1:5000/admin/stats" -H "accept: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzIiwianRpIjoiNjUwNWEwMWItNDBmYy00MjRjLWJiNWQtMGE4MGQ4YWM3N2M2IiwiaWF0IjoxNzk1ODUyODU5LCJleHAiOjE3OTU4NjAwNTksInVzZXJuYW1lIjoiamVycnkiLCJyb2xlIjoidXNlciIsImlzX2FkbWluIjpmYWxzZX0.uedbfo9LGZywJzMtmpmBbbniuxQvSjjJtWkt4lnW130"
+        HTTP/1.1 403 FORBIDDEN
+        Server: Werkzeug/3.1.9 Python/3.14.8
+        Date: Sat, 28 Nov 2026 08:15:01 GMT
+        Content-Type: application/json
+        Content-Length: 41
+        Connection: close
+
+        {"error":"elevated privileges required"}
+
+
+4) Paginated list endpoint
+   For your paginated list endpoint (e.g. GET /<resource>?page=1&limit=...):
+    •	Show a request that returns:
+    o	xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxA bounded list (not the whole table; limited by limit or default).
+    o	Metadata about the whole set (e.g. total, page, pageSize, hasNext, etc. — whatever your project uses).
+    Make sure you’re using an authenticated user if the list is protected.
+
+    curl -X GET "http://127.0.0.1:5000/media?page=1&per_page=3" -H "accept: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwianRpIjoiYzQ3NTA4ZjMtZDM3YS00OGE0LWJmZWUtNGNmM2FiYjNhNmIyIiwiaWF0IjoxNzk1ODUzNDM5LCJleHAiOjE3OTU4NjA2MzksInVzZXJuYW1lIjoiYWRtaW4iLCJyb2xlIjoiYWRtaW4iLCJpc19hZG1pbiI6dHJ1ZX0.Ikm9xccg9XFzhILM6MsfzuNOcRMvb_JesokEuWZ7JHI"
+    {"media":[{"id":1,"type":"movie","title":"The Matrix","year":1999,"duration":8160,"certificate":"R","genres":"Action, Sci-Fi","description":"A computer hacker discovers that his life is nothing more than an elaborate simulation run by an evil AI.","imdb_id":"tt0133093","tmdb_id":"603-the-matrix","wiki_id":"The_Matrix","catalog_id":1,"user_id":1},{"id":2,"type":"movie","title":"Liger","year":2021,"duration":8400,"certificate":"PG-13","genres":"Action, Drama, Romance","description":"A story about martial arts, dreams and star crossed lovers. Liger is an MMA fighter who trains hard and rises up the ranks with one goal in mind, to fight like his idol, world renowned MMA fighter Mark Anderson and get noticed by him.","imdb_id":"tt4435072","tmdb_id":"787163","wiki_id":"Liger","catalog_id":2,"user_id":2},{"id":3,"type":"movie","title":"Inception","year":2010,"duration":8880,"certificate":"PG-13","genres":"Action, Adventure, Sci-Fi","description":"A thief who steals corporate secrets through the use of dream-sharing technology is given the inverse task of planting an idea into the mind of a C.E.O.","imdb_id":"tt1375666","tmdb_id":"27205-inception","wiki_id":"Inception","catalog_id":3,"user_id":1}],"page":1,"per_page":3,"total":53,"pages":18,"has_prev":false,"prev_num":null,"has_next":true,"next_num":2,"prev_url":null,"next_url":"/media?page=2&per_page=3"}
+
+    curl -X GET "http://127.0.0.1:5000/media?page=2&per_page=3" -H "accept: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwianRpIjoiYzQ3NTA4ZjMtZDM3YS00OGE0LWJmZWUtNGNmM2FiYjNhNmIyIiwiaWF0IjoxNzk1ODUzNDM5LCJleHAiOjE3OTU4NjA2MzksInVzZXJuYW1lIjoiYWRtaW4iLCJyb2xlIjoiYWRtaW4iLCJpc19hZG1pbiI6dHJ1ZX0.Ikm9xccg9XFzhILM6MsfzuNOcRMvb_JesokEuWZ7JHI"
+    {"media":[{"id":4,"type":"movie","title":"The Dark Knight","year":2008,"duration":9120,"certificate":"PG-13","genres":"Action, Crime, Drama","description":"When the menace known as the Joker wreaks havoc and chaos on the people of Gotham, Batman must accept one of the greatest psychological and physical tests of his ability to fight injustice.","imdb_id":"tt0468569","tmdb_id":"155-the-dark-knight","wiki_id":"The_Dark_Knight","catalog_id":4,"user_id":1},{"id":5,"type":"movie","title":"Interstellar","year":2014,"duration":10140,"certificate":"PG-13","genres":"Adventure, Drama, Sci-Fi","description":"A team of explorers travel through a wormhole in space in an attempt to ensure humanity's survival.","imdb_id":"tt0816692","tmdb_id":"157336-interstellar","wiki_id":"Interstellar_(film)","catalog_id":5,"user_id":2},{"id":6,"type":"movie","title":"Pulp Fiction","year":1994,"duration":9240,"certificate":"R","genres":"Crime, Drama","description":"The lives of two mob hitmen, a boxer, a gangster and his wife, and a pair of diner bandits intertwine in four tales of violence and redemption.","imdb_id":"tt0110912","tmdb_id":"680-pulp-fiction","wiki_id":"Pulp_Fiction","catalog_id":6,"user_id":1}],"page":2,"per_page":3,"total":53,"pages":18,"has_prev":true,"prev_num":1,"has_next":true,"next_num":3,"prev_url":"/media?page=1&per_page=3","next_url":"/media?page=3&per_page=3"}

@@ -3,7 +3,9 @@ import sqlite3
 
 from flask import current_app, g
 
-from media_info_api.media.models import Catalog, Media, User
+from media_info_api.media.models.catalog import Catalog
+from media_info_api.media.models.media import Media
+from media_info_api.media.models.user import User
 
 
 def join_with_media(media: Media, catalog: Catalog, user: User):

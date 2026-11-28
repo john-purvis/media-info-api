@@ -7,8 +7,14 @@ from flask import Flask, jsonify
 from werkzeug.security import generate_password_hash
 
 from media_info_api.config import DevelopmentConfig, ProductionConfig, TestingConfig
-from media_info_api.media.models import Catalog, Media, User
-from media_info_api.media.routes import media_bp, root_bp, users_bp
+from media_info_api.media.models.catalog import Catalog
+from media_info_api.media.models.media import Media
+from media_info_api.media.models.user import User
+from media_info_api.media.routes.admin import admin_bp
+from media_info_api.media.routes.catalog import catalog_bp
+from media_info_api.media.routes.media import media_bp
+from media_info_api.media.routes.root import root_bp
+from media_info_api.media.routes.user import auth_bp, users_bp
 
 
 def create_app(config_name="development"):
@@ -95,7 +101,10 @@ def create_app(config_name="development"):
     if DEBUG:
         print("Migrations enabled")
 
+    media_app.register_blueprint(auth_bp)
     media_app.register_blueprint(root_bp)
+    media_app.register_blueprint(admin_bp, url_prefix="/admin")
+    media_app.register_blueprint(catalog_bp, url_prefix="/catalog")
     media_app.register_blueprint(media_bp, url_prefix="/media")
     media_app.register_blueprint(users_bp, url_prefix="/users")
     if DEBUG:
